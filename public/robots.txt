@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://fifa26-store.vercel.app/sitemap.xml

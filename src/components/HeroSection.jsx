@@ -1,3 +1,7 @@
+import products from "../data/products"
+
+const bgProducts = [products[1], products[0], products[4], products[3], products[2]]
+
 const HeroSection = () => {
   const scrollToProducts = () => {
     document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })
@@ -6,6 +10,23 @@ const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-surface via-surface/95 to-surface" />
+
+      {bgProducts.map((p, i) => (
+        <img
+          key={p.id}
+          src={p.image}
+          alt=""
+          loading="eager"
+          className="absolute hidden md:block w-64 lg:w-80 opacity-50 object-cover rounded-2xl"
+          style={{
+            top: `${15 + i * 18}%`,
+            left: i % 2 === 0 ? `${-5 + (i % 3) * 8}%` : 'auto',
+            right: i % 2 !== 0 ? `${-5 + (i % 3) * 8}%` : 'auto',
+            transform: `rotate(${i % 2 === 0 ? '-' : ''}${8 + i * 4}deg)`,
+            filter: 'blur(1px)',
+          }}
+        />
+      ))}
 
       <video
         autoPlay
