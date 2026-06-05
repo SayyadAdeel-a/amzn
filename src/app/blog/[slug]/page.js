@@ -4,7 +4,7 @@ import Footer from "../../../components/Footer"
 import { db } from "../../../lib/firebase"
 import { doc, getDoc, collection, getDocs } from "firebase/firestore"
 
-export const revalidate = 60; // Optional: revalidate every minute for caching
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }) {
   const { slug } = await params;
