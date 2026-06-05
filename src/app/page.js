@@ -17,8 +17,21 @@ export default async function Home() {
   const productSnapshot = await getDocs(productsCol);
   const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-  const hotProducts = products.filter(p => p.badge === 'hot');
-  const newProducts = products.filter(p => p.badge === 'new');
+  // 1. Hot Products (Uses badge first, falls back to highest reviewed products)
+  let hotProducts = products.filter(p => p.badge === 'hot');
+  if (hotProducts.length === 0) {
+    hotProducts = [...products].sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0)).slice(0, 8);
+  }
+
+  // 2. New Arrivals (Uses badge first, falls back to most recently added)
+  let newProducts = products.filter(p => p.badge === 'new');
+  if (newProducts.length === 0) {
+    newProducts = [...products].sort((a, b) => {
+      const dateA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+      const dateB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+      return dateB - dateA;
+    }).slice(0, 8);
+  }
 
   return (
     <div className="min-h-screen flex flex-col font-sans">

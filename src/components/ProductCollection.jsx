@@ -29,7 +29,7 @@ const ProductCollection = ({ title, description, products, viewAllLink }) => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-          {products.slice(0, 4).map((product) => (
+          {products.slice(0, 8).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

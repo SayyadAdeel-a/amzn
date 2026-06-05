@@ -3,7 +3,7 @@ import Link from "next/link"
 import { useState } from "react"
 import ProductCard from "./ProductCard"
 
-const PER_PAGE = 4
+const PER_PAGE = 12
 
 const ProductsGrid = ({ products, activeCategoryProp, allCategories }) => {
   const [page, setPage] = useState(1)
