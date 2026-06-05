@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-export default function AnimatedHero({ title, excerpt }) {
+export default function AnimatedHero({ title, excerpt, overline }) {
   // Split title into words for individual staggering
   const words = title.split(" ");
 
@@ -58,20 +58,22 @@ export default function AnimatedHero({ title, excerpt }) {
       animate="show"
       style={{ perspective: 1000 }}
     >
-      <div className="flex items-center gap-4 mb-8 overflow-hidden">
-        <motion.span 
-          variants={lineVariants} 
-          className="h-[2px] w-12 bg-brand origin-left"
-        ></motion.span>
-        <motion.span 
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
-          className="text-brand font-bold tracking-widest uppercase text-xs"
-        >
-          Editorial
-        </motion.span>
-      </div>
+      {overline && (
+        <div className="flex items-center gap-4 mb-8 overflow-hidden">
+          <motion.span 
+            variants={lineVariants} 
+            className="h-[2px] w-12 bg-brand origin-left"
+          ></motion.span>
+          <motion.span 
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7, duration: 0.5 }}
+            className="text-brand font-bold tracking-widest uppercase text-xs"
+          >
+            {overline}
+          </motion.span>
+        </div>
+      )}
       
       <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[0.95] mb-10 tracking-tighter" style={{ textWrap: 'balance' }}>
         {words.map((word, i) => (
@@ -83,13 +85,15 @@ export default function AnimatedHero({ title, excerpt }) {
         ))}
       </h1>
       
-      <motion.p 
-        variants={excerptVariants}
-        className="text-xl md:text-3xl text-zinc-400 font-medium leading-snug max-w-3xl tracking-tight" 
-        style={{ textWrap: 'pretty' }}
-      >
-        {excerpt}
-      </motion.p>
+      {excerpt && (
+        <motion.p 
+          variants={excerptVariants}
+          className="text-xl md:text-3xl text-zinc-400 font-medium leading-snug max-w-3xl tracking-tight" 
+          style={{ textWrap: 'pretty' }}
+        >
+          {excerpt}
+        </motion.p>
+      )}
     </motion.header>
   );
 }

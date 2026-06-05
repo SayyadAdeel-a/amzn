@@ -1,8 +1,6 @@
 import ReactMarkdown from "react-markdown"
 import Navbar from "../../../components/Navbar"
 import Footer from "../../../components/Footer"
-import SmoothScroll from "../../../components/SmoothScroll"
-import BlogSpotlight from "../../../components/BlogSpotlight"
 import AnimatedHero from "../../../components/AnimatedHero"
 import ParallaxImage from "../../../components/ParallaxImage"
 import { db } from "../../../lib/firebase"
@@ -70,20 +68,18 @@ export default async function BlogPost({ params }) {
   };
 
   return (
-    <SmoothScroll>
-      <div className="min-h-screen flex flex-col font-sans bg-[#050505] relative overflow-hidden">
-        <BlogSpotlight />
-        <div className="relative z-10 w-full">
-          <Navbar />
-          
-          {/* Article JSON-LD */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          />
+    <div className="min-h-screen flex flex-col font-sans bg-[#050505] relative overflow-hidden">
+      <div className="relative z-10 w-full flex-grow flex flex-col">
+        <Navbar />
+        
+        {/* Article JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
           
           <main className="flex-grow py-24 px-4 sm:px-6 lg:px-8 w-full max-w-[90rem] mx-auto">
-            <AnimatedHero title={data.title} excerpt={data.excerpt} />
+            <AnimatedHero title={data.title} excerpt={data.excerpt} overline="Editorial" />
             
             <div className="flex flex-col lg:flex-row gap-16 lg:gap-32 relative max-w-7xl">
               {/* Sticky Meta Sidebar */}
@@ -141,9 +137,8 @@ export default async function BlogPost({ params }) {
               </article>
             </div>
           </main>
-          <Footer />
-        </div>
+        <Footer />
       </div>
-    </SmoothScroll>
+    </div>
   )
 }

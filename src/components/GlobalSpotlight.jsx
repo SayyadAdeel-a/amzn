@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion, useSpring } from "framer-motion";
 
-export default function BlogSpotlight() {
+export default function GlobalSpotlight() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
   // Use springs to give the spotlight a smooth, heavy feel when following the mouse

@@ -1,4 +1,5 @@
 import Image from "next/image"
+import AnimatedHero from "./AnimatedHero"
 
 const HeroSection = ({ products }) => {
   const bgProducts = [products[1], products[0], products[4], products[3], products[2]].filter(Boolean);
@@ -52,15 +53,12 @@ const HeroSection = ({ products }) => {
           FIFA 2026 Collection Live
         </div>
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-white leading-[1.1] tracking-tight mb-6">
-          FIFA 2026 Football Gear &{" "}
-          <span className="text-brand">Streetwear Drops</span>
-          <span className="inline-block ml-2">⚽🔥</span>
-        </h1>
-
-        <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Trending sneakers, jerseys, and football fashion from global teams
-        </p>
+        <div className="mb-10">
+          <AnimatedHero 
+            title="FIFA 2026 Football Gear & Streetwear Drops" 
+            excerpt="Trending sneakers, jerseys, and football fashion from global teams."
+          />
+        </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <a

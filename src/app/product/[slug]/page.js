@@ -2,6 +2,8 @@ import Image from "next/image"
 import Link from "next/link"
 import Navbar from "../../../components/Navbar"
 import Footer from "../../../components/Footer"
+import AnimatedHero from "../../../components/AnimatedHero"
+import ParallaxImage from "../../../components/ParallaxImage"
 import { db } from "../../../lib/firebase"
 import { doc, getDoc, collection, getDocs } from "firebase/firestore"
 
@@ -107,12 +109,9 @@ export default async function ProductPage({ params }) {
               </div>
             )}
             {product.image ? (
-              <Image
+              <ParallaxImage
                 src={product.image}
                 alt={product.title || product.name || "Product"}
-                fill
-                className="object-cover"
-                priority
               />
             ) : (
               <span className="text-zinc-500 font-medium">No Image Provided</span>
@@ -121,9 +120,12 @@ export default async function ProductPage({ params }) {
 
           {/* Product Details */}
           <div className="flex flex-col">
-            <h1 className="text-2xl sm:text-3xl font-black text-white leading-snug mb-6">
-              {product.title || product.name || "Untitled Product"}
-            </h1>
+            <div className="-mt-4 mb-4">
+              <AnimatedHero 
+                title={product.title || product.name || "Untitled Product"} 
+                excerpt="" 
+              />
+            </div>
 
             <div className="flex items-center gap-4 mb-8">
               <div className="flex items-baseline gap-2">
