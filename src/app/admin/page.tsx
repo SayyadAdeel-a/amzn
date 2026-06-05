@@ -59,6 +59,20 @@ export default function AdminDashboard() {
     }
   };
 
+  const copyReport = () => {
+    if (trends.length === 0) return;
+    
+    let text = "Trending Keywords Report:\n\n";
+    trends.forEach(t => {
+      text += `- ${t.keyword} (Score: ${t.score}, Trend: ${t.direction})\n`;
+    });
+    
+    text += "\nPrompt for ChatGPT: Using the trending keywords above, generate 5 highly engaging Pinterest pin descriptions for a FIFA 2026 streetwear and football gear store. Make them punchy and include relevant hashtags.";
+
+    navigator.clipboard.writeText(text);
+    alert("Copied to clipboard!");
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (auth === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
@@ -265,15 +279,23 @@ export default function AdminDashboard() {
             <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
               <h2 className="text-xl font-bold text-white mb-6">Live Trends Analysis</h2>
               {trends.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {trends.slice(0, 15).map((t, i) => (
-                    <div key={i} className="bg-surface p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
-                      <span className="text-white font-bold capitalize truncate mr-2">{t.keyword}</span>
-                      <div className="flex flex-col items-end">
-                        <span className="text-xs text-brand font-black bg-brand/10 px-2 py-1 rounded-md">{t.score > 0 ? Math.round(t.score) : 90}+ Score</span>
+                <div className="animate-in fade-in duration-500">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {trends.slice(0, 15).map((t, i) => (
+                      <div key={i} className="bg-surface p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
+                        <span className="text-white font-bold capitalize truncate mr-2">{t.keyword}</span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs text-brand font-black bg-brand/10 px-2 py-1 rounded-md">{t.score > 0 ? Math.round(t.score) : 90}+ Score</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  <button
+                    onClick={copyReport}
+                    className="w-full bg-zinc-800 text-white border border-zinc-700 font-bold text-lg py-4 rounded-xl hover:bg-zinc-700 transition-all duration-300 shadow-lg"
+                  >
+                    📋 Copy Full Report (For ChatGPT)
+                  </button>
                 </div>
               ) : (
                 <p className="text-zinc-500">Loading trends...</p>
