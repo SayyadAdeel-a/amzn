@@ -16,8 +16,7 @@ export async function POST(req: Request) {
     const response = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Accept-Language": "en-US,en;q=0.9",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
@@ -52,20 +51,43 @@ export async function POST(req: Request) {
       }
     }
 
+    // ASIN Fallback for Images
+    // If Amazon blocks the fetch (e.g., Captcha page), we can still construct the official Affiliate Image URL using the ASIN!
+    let finalImage = image.trim();
+    if (!finalImage || html.includes("api-services-support@amazon.com")) {
+      const asinMatch = url.match(/(?:dp|o|asin|il|product)\/([a-zA-Z0-9]{10})/i);
+      const asin = asinMatch ? asinMatch[1] : null;
+      if (asin) {
+        finalImage = `https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&Format=_SL500_&ASIN=${asin}&MarketPlace=US&ID=AsinImage&WS=1&ServiceVersion=20070822`;
+      }
+    }
+
     return NextResponse.json({
       title: title.trim(),
       description: description.trim(),
-      image: image.trim(),
+      image: finalImage,
       price: price.trim(),
       url: canonicalUrl.trim(),
     });
   } catch (error) {
     console.error("Error fetching product:", error);
-    // Never crash, return empty fields
+    
+    // Extract ASIN as an absolute last resort if fetch completely fails
+    let fallbackImage = "";
+    try {
+      const { url } = await req.clone().json();
+      const asinMatch = url.match(/(?:dp|o|asin|il|product)\/([a-zA-Z0-9]{10})/i);
+      const asin = asinMatch ? asinMatch[1] : null;
+      if (asin) {
+        fallbackImage = `https://ws-na.amazon-adsystem.com/widgets/q?_encoding=UTF8&Format=_SL500_&ASIN=${asin}&MarketPlace=US&ID=AsinImage&WS=1&ServiceVersion=20070822`;
+      }
+    } catch(e) {}
+
+    // Never crash, return empty fields but try to salvage the image
     return NextResponse.json({
       title: "",
       description: "",
-      image: "",
+      image: fallbackImage,
       price: "",
       url: "",
     });
