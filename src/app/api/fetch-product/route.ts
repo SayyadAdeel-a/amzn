@@ -9,17 +9,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Increase timeout to 30 seconds because headless JS rendering takes longer
+    // Set aggressive timeout using AbortController (8 seconds)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    // Use ScraperAPI with JS rendering enabled to capture lazy-loaded reviews and videos
-    let fetchUrl = url;
-    if (process.env.SCRAPER_API_KEY) {
-      fetchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(url)}&render=true`;
-    }
-
-    const response = await fetch(fetchUrl, {
+    const response = await fetch(url, {
       signal: controller.signal,
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
@@ -70,11 +64,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Amazon rating, review count, sales volume and actual review text extraction
+    // Amazon rating, review count, and sales volume extraction
     let rating = 5;
     let reviewCount = 0;
     let salesVolume = "";
-    const reviews: string[] = [];
     try {
       const ratingText = $("span.a-icon-alt").first().text() || $("i[data-hook='average-star-rating']").text();
       const ratingMatch = ratingText.match(/([0-9.]+)\s*out of/);
@@ -87,28 +80,17 @@ export async function POST(req: Request) {
       // Extract Sales Volume (e.g. "500+ bought in past month")
       salesVolume = $("#social-proofing-faceout-title-tk_bought span").text().trim() || 
                     $(".social-proofing-faceout-title-text span").first().text().trim();
-
-      // Extract up to 10 actual written reviews (Trying multiple Amazon DOM structures)
-      let reviewElements = $("[data-hook='review-collapsed'] span, .review-text-content span, .a-expander-content.reviewText span");
-      reviewElements.each((i, el) => {
-        if (reviews.length < 10) {
-          const rText = $(el).text().trim();
-          if (rText.length > 20 && !reviews.includes(rText)) {
-            reviews.push(rText);
-          }
-        }
-      });
     } catch (e) {
       console.error("Error parsing reviews:", e);
     }
 
     // Video extraction attempt (Amazon hides these in scripts or specific divs)
-    let videoUrl = "";
+    let videos: string[] = [];
     try {
-      // Look for a raw .mp4 link in the HTML string
-      const mp4Match = html.match(/https:\/\/[^"'\s]+\.mp4/i);
-      if (mp4Match) {
-        videoUrl = mp4Match[0];
+      // Look for raw .mp4 links in the HTML string and take up to 3 unique ones
+      const mp4Matches = html.match(/https:\/\/[^"'\s]+\.mp4/gi);
+      if (mp4Matches) {
+        videos = Array.from(new Set(mp4Matches)).slice(0, 3);
       }
     } catch (e) {}
 
@@ -171,9 +153,8 @@ export async function POST(req: Request) {
       url: canonicalUrl.trim(),
       rating,
       reviewCount,
-      reviews,
       salesVolume,
-      videoUrl,
+      videos,
       category,
       badge
     });
@@ -198,9 +179,8 @@ export async function POST(req: Request) {
       image: fallbackImage,
       price: "",
       url: "",
-      reviews: [],
       salesVolume: "",
-      videoUrl: "",
+      videos: [],
       category: "jerseys",
       badge: "none"
     });

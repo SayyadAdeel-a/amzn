@@ -174,9 +174,8 @@ export default function AdminDashboard() {
         badge: data.badge || "none",
         rating: data.rating || 5,
         reviewCount: data.reviewCount || 0,
-        reviews: data.reviews || [],
         salesVolume: data.salesVolume || "",
-        videoUrl: data.videoUrl || "",
+        videos: data.videos || [],
         featured: false,
         affiliateLink: data.url || url
       });
@@ -436,15 +435,14 @@ export default function AdminDashboard() {
                     <label className="block text-xs font-bold text-zinc-400 mb-2">Sales Volume</label>
                     <input type="text" value={productForm.salesVolume} onChange={e => setProductForm({...productForm, salesVolume: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" placeholder="e.g. 500+ bought in past month" />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-brand/10 text-brand text-xs font-bold px-3 py-1.5 rounded-lg border border-brand/20">
-                      💬 Scraped Text Reviews: {productForm.reviews?.length || 0}
-                    </div>
-                  </div>
-                  {productForm.videoUrl && (
+                  {productForm.videos && productForm.videos.length > 0 && (
                     <div className="md:col-span-2 mt-2">
-                      <label className="block text-xs font-bold text-zinc-400 mb-2">Product Video (Scraped from Amazon)</label>
-                      <video src={productForm.videoUrl} controls className="w-full max-w-sm rounded-lg border border-zinc-700" />
+                      <label className="block text-xs font-bold text-zinc-400 mb-2">Product Videos ({productForm.videos.length} Scraped from Amazon)</label>
+                      <div className="flex gap-4 overflow-x-auto pb-4">
+                        {productForm.videos.map((vid: string, i: number) => (
+                          <video key={i} src={vid} controls className="w-full max-w-[250px] rounded-lg border border-zinc-700 flex-shrink-0" />
+                        ))}
+                      </div>
                     </div>
                   )}
                   <div className="flex items-center gap-3 md:col-span-2">
