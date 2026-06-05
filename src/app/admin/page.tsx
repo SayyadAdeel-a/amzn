@@ -8,23 +8,22 @@ import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore"
 export default function AdminDashboard() {
   const [auth, setAuth] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "smart-add" | "products" | "blogs">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "add-product" | "pinterest" | "products" | "blogs">("overview");
   const [trends, setTrends] = useState<any[]>([]);
 
-  // Form states - Smart Add
+  // Form states - Add Product
   const [url, setUrl] = useState("");
   const [isFetching, setIsFetching] = useState(false);
-  const [fetchedData, setFetchedData] = useState<any>(null);
-  const [isRewriting, setIsRewriting] = useState(false);
-  const [rewrittenData, setRewrittenData] = useState<any>(null);
-  const [category, setCategory] = useState("jerseys");
-  const [badge, setBadge] = useState("none");
-  const [rating, setRating] = useState(5);
-  const [reviewCount, setReviewCount] = useState(0);
-  const [featured, setFeatured] = useState(false);
-  const [originalPrice, setOriginalPrice] = useState("");
+  const [productForm, setProductForm] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ message: string; error?: boolean } | null>(null);
+
+  // States - Pinterest
+  const [selectedPinProduct, setSelectedPinProduct] = useState<any>(null);
+  const [pinRewrite, setPinRewrite] = useState<any>(null);
+  const [isRewriting, setIsRewriting] = useState(false);
+  const [isPinning, setIsPinning] = useState(false);
+  const [pinStatus, setPinStatus] = useState<{ message: string; error?: boolean } | null>(null);
 
   // States - Manage Products & Blogs
   const [products, setProducts] = useState<any[]>([]);
@@ -128,7 +127,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Smart Add Methods
+  // Add Product Methods
   const fetchAmazonData = async () => {
     if (!url) return;
     setIsFetching(true);
@@ -140,9 +139,19 @@ export default function AdminDashboard() {
         body: JSON.stringify({ url }),
       });
       const data = await res.json();
-      setFetchedData(data);
-      if (data.rating) setRating(data.rating);
-      if (data.reviewCount) setReviewCount(data.reviewCount);
+      setProductForm({
+        title: data.title || "",
+        description: data.description || "",
+        price: data.price || "",
+        originalPrice: "",
+        image: data.image || "",
+        category: "jerseys",
+        badge: "none",
+        rating: data.rating || 5,
+        reviewCount: data.reviewCount || 0,
+        featured: false,
+        affiliateLink: data.url || url
+      });
     } catch (error) {
       console.error(error);
       alert("Failed to fetch Amazon data.");
@@ -151,53 +160,15 @@ export default function AdminDashboard() {
     }
   };
 
-  const rewriteForPinterest = async () => {
-    if (!fetchedData) return;
-    setIsRewriting(true);
-    try {
-      const res = await fetch("/api/rewrite-product", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: fetchedData.title,
-          description: fetchedData.description,
-          category,
-        }),
-      });
-      const data = await res.json();
-      setRewrittenData({
-        title: data.title || fetchedData.title,
-        description: data.description || fetchedData.description,
-      });
-    } catch (error) {
-      console.error(error);
-      alert("Rewrite failed. Falling back to original data.");
-      setRewrittenData({
-        title: fetchedData.title,
-        description: fetchedData.description,
-      });
-    } finally {
-      setIsRewriting(false);
-    }
-  };
-
   const handleSaveProduct = async () => {
-    if (!rewrittenData || !fetchedData) return;
+    if (!productForm) return;
     setIsSaving(true);
     setSaveStatus(null);
 
     const productPayload = {
-      title: rewrittenData.title,
-      description: rewrittenData.description,
-      price: fetchedData.price,
-      originalPrice,
-      affiliateLink: fetchedData.url || url,
-      image: fetchedData.image,
-      category,
-      badge,
-      rating: Number(rating),
-      reviewCount: Number(reviewCount),
-      featured,
+      ...productForm,
+      rating: Number(productForm.rating),
+      reviewCount: Number(productForm.reviewCount),
       publishedAt: new Date().toISOString(),
     };
 
@@ -205,24 +176,80 @@ export default function AdminDashboard() {
       const slug = productPayload.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
       await setDoc(doc(db, "products", slug), productPayload);
       fetchList("products");
-
-      const pinRes = await fetch("/api/pinterest/create-pin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productPayload),
-      });
-
-      const pinData = await pinRes.json();
-      if (pinData.success) {
-        setSaveStatus({ message: "✅ Product saved to Firebase and Pinterest pin created!" });
-      } else {
-        setSaveStatus({ message: `✅ Product saved — ⚠️ Pinterest pin failed: ${pinData.error}`, error: true });
-      }
+      setSaveStatus({ message: "✅ Product successfully saved to Store!" });
+      // Reset form
+      setProductForm(null);
+      setUrl("");
     } catch (error) {
       console.error(error);
       setSaveStatus({ message: "❌ Failed to save product to Firebase.", error: true });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Pinterest Methods
+  const rewriteForPinterest = async () => {
+    if (!selectedPinProduct) return;
+    setIsRewriting(true);
+    try {
+      const res = await fetch("/api/rewrite-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: selectedPinProduct.title,
+          description: selectedPinProduct.description,
+          category: selectedPinProduct.category,
+        }),
+      });
+      const data = await res.json();
+      setPinRewrite({
+        title: data.title || selectedPinProduct.title,
+        description: data.description || selectedPinProduct.description,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("Rewrite failed. Falling back to original data.");
+      setPinRewrite({
+        title: selectedPinProduct.title,
+        description: selectedPinProduct.description,
+      });
+    } finally {
+      setIsRewriting(false);
+    }
+  };
+
+  const handleCreatePin = async () => {
+    if (!selectedPinProduct || !pinRewrite) return;
+    setIsPinning(true);
+    setPinStatus(null);
+
+    const pinPayload = {
+      title: pinRewrite.title,
+      description: pinRewrite.description,
+      price: selectedPinProduct.price,
+      affiliateLink: selectedPinProduct.affiliateLink,
+      image: selectedPinProduct.image,
+    };
+
+    try {
+      const pinRes = await fetch("/api/pinterest/create-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(pinPayload),
+      });
+
+      const pinData = await pinRes.json();
+      if (pinData.success) {
+        setPinStatus({ message: "✅ Pinterest pin successfully created on your board!" });
+      } else {
+        setPinStatus({ message: `❌ Pinterest pin failed: ${pinData.error}`, error: true });
+      }
+    } catch (error) {
+      console.error(error);
+      setPinStatus({ message: "❌ Failed to contact Pinterest API.", error: true });
+    } finally {
+      setIsPinning(false);
     }
   };
 
@@ -257,12 +284,13 @@ export default function AdminDashboard() {
         {/* TABS */}
         <div className="flex gap-4 border-b border-zinc-800 pb-4 overflow-x-auto">
           <button onClick={() => setActiveTab("overview")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "overview" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Overview</button>
-          <button onClick={() => setActiveTab("smart-add")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "smart-add" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Smart Add Product</button>
+          <button onClick={() => setActiveTab("add-product")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "add-product" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Add Product</button>
+          <button onClick={() => setActiveTab("pinterest")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "pinterest" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Pinterest Marketing</button>
           <button onClick={() => setActiveTab("products")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "products" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Products</button>
           <button onClick={() => setActiveTab("blogs")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "blogs" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Blogs</button>
         </div>
 
-        {/* TAB 0: OVERVIEW */}
+        {/* TAB: OVERVIEW */}
         {activeTab === "overview" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -304,64 +332,56 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* TAB 1: SMART ADD */}
-        {activeTab === "smart-add" && (
+        {/* TAB: ADD PRODUCT */}
+        {activeTab === "add-product" && (
           <div className="space-y-6">
             <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
-              <h2 className="text-xl font-bold text-white mb-4">1. Fetch Product</h2>
+              <h2 className="text-xl font-bold text-white mb-4">1. Fetch Product Data</h2>
               <div className="flex gap-3">
                 <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste Amazon product URL" className="flex-1 bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
                 <button onClick={fetchAmazonData} disabled={isFetching || !url} className="bg-brand text-black font-bold px-6 py-3 rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50">
                   {isFetching ? "Fetching..." : "Fetch Data"}
                 </button>
               </div>
-              {fetchedData && (
-                <div className="mt-6 flex gap-4 p-4 bg-surface rounded-xl border border-zinc-800">
-                  {fetchedData.image && (
-                    <div className="w-24 h-24 relative rounded-lg overflow-hidden flex-shrink-0">
-                      <Image src={fetchedData.image} alt="Preview" fill className="object-cover" />
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm font-semibold text-white line-clamp-2">{fetchedData.title}</p>
-                    <p className="text-brand font-bold mt-2">${fetchedData.price}</p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {fetchedData && (
+            {productForm && (
               <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-white">2. Pinterest Optimization</h2>
-                  <button onClick={rewriteForPinterest} disabled={isRewriting} className="bg-[#181818] border border-zinc-700 text-white font-bold px-4 py-2 rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 text-sm">
-                    {isRewriting ? "Processing..." : "Rewrite for Pinterest with AI"}
-                  </button>
-                </div>
-                {rewrittenData && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-surface p-4 rounded-xl border border-zinc-800">
-                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Original (Amazon)</span>
-                      <input type="text" readOnly value={fetchedData.title} className="w-full bg-transparent border-b border-zinc-800 pb-2 mb-3 text-sm text-zinc-400 focus:outline-none" />
-                      <textarea readOnly value={fetchedData.description} className="w-full bg-transparent text-sm text-zinc-400 resize-none h-32 focus:outline-none" />
+                <h2 className="text-xl font-bold text-white mb-6">2. Edit & Publish</h2>
+                
+                <div className="flex gap-6 mb-6">
+                  {productForm.image && (
+                    <div className="w-32 h-32 relative rounded-xl overflow-hidden flex-shrink-0 border border-zinc-700">
+                      <Image src={productForm.image} alt="Preview" fill className="object-cover" />
                     </div>
-                    <div className="bg-brand/5 p-4 rounded-xl border border-brand/20">
-                      <span className="text-xs font-bold text-brand uppercase tracking-wider block mb-2 flex items-center gap-1">✨ Optimized by AI</span>
-                      <input type="text" value={rewrittenData.title} onChange={(e) => setRewrittenData({ ...rewrittenData, title: e.target.value })} className="w-full bg-transparent border-b border-brand/30 pb-2 mb-3 text-sm text-white font-semibold focus:outline-none focus:border-brand" />
-                      <textarea value={rewrittenData.description} onChange={(e) => setRewrittenData({ ...rewrittenData, description: e.target.value })} className="w-full bg-transparent text-sm text-zinc-200 resize-none h-32 focus:outline-none" />
+                  )}
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 mb-2">Title</label>
+                      <input type="text" value={productForm.title} onChange={e => setProductForm({...productForm, title: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 mb-2">Price ($)</label>
+                        <input type="text" value={productForm.price} onChange={e => setProductForm({...productForm, price: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 mb-2">Original Price ($)</label>
+                        <input type="text" value={productForm.originalPrice} onChange={e => setProductForm({...productForm, originalPrice: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" placeholder="e.g. 129.99" />
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
 
-            {rewrittenData && (
-              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-bold text-white mb-6">3. Finalize & Publish</h2>
+                <div className="mb-6">
+                  <label className="block text-xs font-bold text-zinc-400 mb-2">Description</label>
+                  <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white h-32 resize-none focus:outline-none focus:border-brand" />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-2">Category</label>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
+                    <select value={productForm.category} onChange={e => setProductForm({...productForm, category: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
                       <option value="jerseys">Jerseys</option>
                       <option value="balls">Balls</option>
                       <option value="footwear">Footwear</option>
@@ -370,7 +390,7 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-2">Badge</label>
-                    <select value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
+                    <select value={productForm.badge} onChange={e => setProductForm({...productForm, badge: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
                       <option value="none">None</option>
                       <option value="hot">Hot</option>
                       <option value="new">New</option>
@@ -378,22 +398,112 @@ export default function AdminDashboard() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-2">Rating (Out of 5)</label>
-                    <input type="number" step="0.1" min="0" max="5" value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                    <input type="number" step="0.1" min="0" max="5" value={productForm.rating} onChange={e => setProductForm({...productForm, rating: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 mb-2">Review Count</label>
-                    <input type="number" min="0" value={reviewCount} onChange={(e) => setReviewCount(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                    <input type="number" min="0" value={productForm.reviewCount} onChange={e => setProductForm({...productForm, reviewCount: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
-                    <input type="checkbox" id="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-5 h-5 accent-brand" />
+                    <input type="checkbox" id="featured" checked={productForm.featured} onChange={e => setProductForm({...productForm, featured: e.target.checked})} className="w-5 h-5 accent-brand" />
                     <label htmlFor="featured" className="text-sm font-bold text-white">Featured Product (Shows on homepage)</label>
                   </div>
                 </div>
+
                 <button onClick={handleSaveProduct} disabled={isSaving} className="w-full bg-brand text-black font-bold text-lg py-4 rounded-xl hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/20 disabled:opacity-50">
-                  {isSaving ? "Saving..." : "Save Product + Post to Pinterest"}
+                  {isSaving ? "Saving..." : "Save Product to Store"}
                 </button>
                 {saveStatus && (
                   <div className={`mt-4 p-4 rounded-lg font-bold text-sm ${saveStatus.error ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>{saveStatus.message}</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: PINTEREST MARKETING */}
+        {activeTab === "pinterest" && (
+          <div className="space-y-6">
+            {!selectedPinProduct ? (
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+                <h2 className="text-xl font-bold text-white mb-6">Select a Product to Pin</h2>
+                <div className="space-y-4">
+                  {products.map(p => (
+                    <div key={p.id} className="flex items-center justify-between bg-surface p-4 rounded-xl border border-zinc-800">
+                      <div className="flex items-center gap-4">
+                        {p.image ? (
+                          <div className="w-12 h-12 relative rounded overflow-hidden flex-shrink-0">
+                            <Image src={p.image} alt="" fill className="object-cover" />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] text-zinc-500">No Img</span>
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-bold text-white line-clamp-1">{p.title || p.name || "Untitled Product"}</p>
+                          <p className="text-sm text-zinc-400">${p.price} • {p.category}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => { setSelectedPinProduct(p); setPinRewrite(null); setPinStatus(null); }} className="bg-[#E60023] text-white font-bold text-sm px-4 py-2 rounded-lg hover:bg-[#ad081b] transition-colors shadow-lg shadow-[#E60023]/20">
+                        Create Pin
+                      </button>
+                    </div>
+                  ))}
+                  {products.length === 0 && !isLoadingList && <p className="text-zinc-500">No products found. Add products first.</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in duration-500">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-xl font-bold text-white">Generate Pinterest Pin</h2>
+                  <button onClick={() => setSelectedPinProduct(null)} className="text-zinc-400 hover:text-white font-bold text-sm px-4 py-2 border border-zinc-700 rounded-lg hover:bg-zinc-800 transition-colors">
+                    Back to Products
+                  </button>
+                </div>
+
+                <div className="flex gap-6 mb-8 bg-surface p-4 rounded-xl border border-zinc-800">
+                  <div className="w-24 h-24 relative rounded-lg overflow-hidden flex-shrink-0">
+                    <Image src={selectedPinProduct.image} alt="" fill className="object-cover" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white mb-1 line-clamp-2">{selectedPinProduct.title}</p>
+                    <p className="text-brand font-bold">${selectedPinProduct.price}</p>
+                  </div>
+                </div>
+
+                {!pinRewrite ? (
+                  <div className="text-center py-8 bg-brand/5 border border-brand/20 rounded-xl mb-6">
+                    <p className="text-zinc-300 mb-6">Generate highly-engaging SEO optimized copy for Pinterest.</p>
+                    <button onClick={rewriteForPinterest} disabled={isRewriting} className="bg-brand text-black font-bold text-lg px-8 py-3 rounded-xl hover:bg-brand-light transition-all shadow-lg shadow-brand/20 disabled:opacity-50">
+                      {isRewriting ? "AI is typing..." : "✨ Rewrite for Pinterest"}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="bg-surface p-6 rounded-xl border border-brand/30 relative">
+                      <span className="absolute -top-3 left-4 bg-surface px-2 text-xs font-black text-brand uppercase tracking-wider flex items-center gap-1">✨ AI Optimized Pin</span>
+                      
+                      <div className="mb-4 mt-2">
+                        <label className="block text-xs font-bold text-zinc-400 mb-2">Pin Title</label>
+                        <input type="text" value={pinRewrite.title} onChange={e => setPinRewrite({...pinRewrite, title: e.target.value})} className="w-full bg-transparent border-b border-brand/30 pb-2 text-sm text-white font-bold focus:outline-none focus:border-brand" />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 mb-2">Pin Description & Hashtags</label>
+                        <textarea value={pinRewrite.description} onChange={e => setPinRewrite({...pinRewrite, description: e.target.value})} className="w-full bg-transparent text-sm text-zinc-200 resize-none h-32 focus:outline-none" />
+                      </div>
+                    </div>
+
+                    <button onClick={handleCreatePin} disabled={isPinning} className="w-full bg-[#E60023] text-white font-bold text-lg py-4 rounded-xl hover:bg-[#ad081b] transition-all duration-300 shadow-lg shadow-[#E60023]/30 disabled:opacity-50 flex justify-center items-center gap-2">
+                      <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.951-7.252 4.168 0 7.41 2.967 7.41 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.367 18.604 0 12.017 0z"/></svg>
+                      {isPinning ? "Posting to Pinterest..." : "Post to Pinterest"}
+                    </button>
+
+                    {pinStatus && (
+                      <div className={`p-4 rounded-lg font-bold text-sm ${pinStatus.error ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>{pinStatus.message}</div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
