@@ -175,6 +175,7 @@ export default function AdminDashboard() {
         rating: data.rating || 5,
         reviewCount: data.reviewCount || 0,
         reviews: data.reviews || [],
+        salesVolume: data.salesVolume || "",
         featured: false,
         affiliateLink: data.url || url
       });
@@ -427,8 +428,17 @@ export default function AdminDashboard() {
                     <input type="number" step="0.1" min="0" max="5" value={productForm.rating} onChange={e => setProductForm({...productForm, rating: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-zinc-400 mb-2">Review Count</label>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Total Review Count</label>
                     <input type="number" min="0" value={productForm.reviewCount} onChange={e => setProductForm({...productForm, reviewCount: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Sales Volume</label>
+                    <input type="text" value={productForm.salesVolume} onChange={e => setProductForm({...productForm, salesVolume: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" placeholder="e.g. 500+ bought in past month" />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="bg-brand/10 text-brand text-xs font-bold px-3 py-1.5 rounded-lg border border-brand/20">
+                      💬 Scraped Text Reviews: {productForm.reviews?.length || 0}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
                     <input type="checkbox" id="featured" checked={productForm.featured} onChange={e => setProductForm({...productForm, featured: e.target.checked})} className="w-5 h-5 accent-brand" />

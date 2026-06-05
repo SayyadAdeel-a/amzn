@@ -13,7 +13,13 @@ export async function POST(req: Request) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    const response = await fetch(url, {
+    // Use ScraperAPI to bypass Amazon Captcha
+    let fetchUrl = url;
+    if (process.env.SCRAPER_API_KEY) {
+      fetchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(url)}`;
+    }
+
+    const response = await fetch(fetchUrl, {
       signal: controller.signal,
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
@@ -64,9 +70,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Amazon rating, review count, and actual review text extraction
+    // Amazon rating, review count, sales volume and actual review text extraction
     let rating = 5;
     let reviewCount = 0;
+    let salesVolume = "";
     const reviews: string[] = [];
     try {
       const ratingText = $("span.a-icon-alt").first().text();
@@ -76,6 +83,10 @@ export async function POST(req: Request) {
       const reviewText = $("#acrCustomerReviewText").first().text();
       const reviewMatch = reviewText.replace(/,/g, "").match(/([0-9]+)/);
       if (reviewMatch) reviewCount = parseInt(reviewMatch[1], 10);
+      
+      // Extract Sales Volume (e.g. "500+ bought in past month")
+      salesVolume = $("#social-proofing-faceout-title-tk_bought span").text().trim() || 
+                    $(".social-proofing-faceout-title-text span").first().text().trim();
 
       // Extract up to 10 actual written reviews from the page
       $(".review-text-content span").each((i, el) => {
@@ -120,7 +131,7 @@ export async function POST(req: Request) {
               },
               { 
                 role: "user", 
-                content: `Title: ${title}\nDescription: ${description}` 
+                content: `Title: ${title}\nDescription: ${description}\nSales Volume: ${salesVolume}` 
               }
             ],
             temperature: 0.1,
@@ -148,6 +159,7 @@ export async function POST(req: Request) {
       rating,
       reviewCount,
       reviews,
+      salesVolume,
       category,
       badge
     });
@@ -173,6 +185,7 @@ export async function POST(req: Request) {
       price: "",
       url: "",
       reviews: [],
+      salesVolume: "",
       category: "jerseys",
       badge: "none"
     });
