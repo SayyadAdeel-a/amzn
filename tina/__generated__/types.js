@@ -8,12 +8,18 @@ export function gql(strings, ...args) {
 export const ProductPartsFragmentDoc = gql`
     fragment ProductParts on Product {
   __typename
-  name
+  title
+  description
   price
-  amazonUrl
+  originalPrice
+  affiliateLink
   image
-  isActive
   category
+  badge
+  rating
+  reviewCount
+  featured
+  publishedAt
 }
     `;
 export const BlogPartsFragmentDoc = gql`

@@ -22,23 +22,34 @@ export default defineConfig({
         path: "content/products",
         format: "json",
         fields: [
-
           {
             type: "string",
-            name: "name",
-            label: "Name",
+            name: "title",
+            label: "Title",
             isTitle: true,
             required: true,
           },
           {
-            type: "number",
+            type: "string",
+            name: "description",
+            label: "Description",
+            ui: { component: "textarea" },
+          },
+          {
+            type: "string",
             name: "price",
             label: "Price",
           },
           {
             type: "string",
-            name: "amazonUrl",
-            label: "Amazon URL",
+            name: "originalPrice",
+            label: "Original Price",
+          },
+          {
+            type: "string",
+            name: "affiliateLink",
+            label: "Affiliate Link",
+            required: true,
           },
           {
             type: "image",
@@ -46,15 +57,36 @@ export default defineConfig({
             label: "Image",
           },
           {
-            type: "boolean",
-            name: "isActive",
-            label: "Active",
-          },
-          {
             type: "string",
             name: "category",
             label: "Category",
-            options: ["Jerseys", "Sneakers", "Streetwear", "Accessories"],
+            options: ["jerseys", "balls", "footwear", "accessories", "gaming", "collectibles"],
+          },
+          {
+            type: "string",
+            name: "badge",
+            label: "Badge",
+            options: ["none", "hot", "new", "limited"],
+          },
+          {
+            type: "number",
+            name: "rating",
+            label: "Rating",
+          },
+          {
+            type: "number",
+            name: "reviewCount",
+            label: "Review Count",
+          },
+          {
+            type: "boolean",
+            name: "featured",
+            label: "Featured",
+          },
+          {
+            type: "datetime",
+            name: "publishedAt",
+            label: "Published At",
           },
         ],
       },

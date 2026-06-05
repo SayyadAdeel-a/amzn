@@ -1,11 +1,17 @@
 fragment ProductParts on Product {
   __typename
-  name
+  title
+  description
   price
-  amazonUrl
+  originalPrice
+  affiliateLink
   image
-  isActive
   category
+  badge
+  rating
+  reviewCount
+  featured
+  publishedAt
 }
 
 fragment BlogParts on Blog {

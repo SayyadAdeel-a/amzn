@@ -91,18 +91,31 @@ type Collection {
 union DocumentNode = Product | Blog | Folder
 
 type Product implements Node & Document {
-  name: String!
-  price: Float
-  amazonUrl: String
+  title: String!
+  description: String
+  price: String
+  originalPrice: String
+  affiliateLink: String!
   image: String
-  isActive: Boolean
   category: String
+  badge: String
+  rating: Float
+  reviewCount: Float
+  featured: Boolean
+  publishedAt: String
   id: ID!
   _sys: SystemInfo!
   _values: JSON!
 }
 
 input StringFilter {
+  startsWith: String
+  eq: String
+  exists: Boolean
+  in: [String]
+}
+
+input ImageFilter {
   startsWith: String
   eq: String
   exists: Boolean
@@ -119,25 +132,32 @@ input NumberFilter {
   in: [Float]
 }
 
-input ImageFilter {
-  startsWith: String
-  eq: String
-  exists: Boolean
-  in: [String]
-}
-
 input BooleanFilter {
   eq: Boolean
   exists: Boolean
 }
 
+input DatetimeFilter {
+  after: String
+  before: String
+  eq: String
+  exists: Boolean
+  in: [String]
+}
+
 input ProductFilter {
-  name: StringFilter
-  price: NumberFilter
-  amazonUrl: StringFilter
+  title: StringFilter
+  description: StringFilter
+  price: StringFilter
+  originalPrice: StringFilter
+  affiliateLink: StringFilter
   image: ImageFilter
-  isActive: BooleanFilter
   category: StringFilter
+  badge: StringFilter
+  rating: NumberFilter
+  reviewCount: NumberFilter
+  featured: BooleanFilter
+  publishedAt: DatetimeFilter
 }
 
 type ProductConnectionEdges {
@@ -160,14 +180,6 @@ type Blog implements Node & Document {
   id: ID!
   _sys: SystemInfo!
   _values: JSON!
-}
-
-input DatetimeFilter {
-  after: String
-  before: String
-  eq: String
-  exists: Boolean
-  in: [String]
 }
 
 input RichTextFilter {
@@ -219,12 +231,18 @@ input DocumentMutation {
 }
 
 input ProductMutation {
-  name: String
-  price: Float
-  amazonUrl: String
+  title: String
+  description: String
+  price: String
+  originalPrice: String
+  affiliateLink: String
   image: String
-  isActive: Boolean
   category: String
+  badge: String
+  rating: Float
+  reviewCount: Float
+  featured: Boolean
+  publishedAt: String
 }
 
 input BlogMutation {

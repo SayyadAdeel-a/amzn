@@ -185,18 +185,31 @@ export type DocumentNode = Product | Blog | Folder;
 
 export type Product = Node & Document & {
   __typename?: 'Product';
-  name: Scalars['String']['output'];
-  price?: Maybe<Scalars['Float']['output']>;
-  amazonUrl?: Maybe<Scalars['String']['output']>;
+  title: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  price?: Maybe<Scalars['String']['output']>;
+  originalPrice?: Maybe<Scalars['String']['output']>;
+  affiliateLink: Scalars['String']['output'];
   image?: Maybe<Scalars['String']['output']>;
-  isActive?: Maybe<Scalars['Boolean']['output']>;
   category?: Maybe<Scalars['String']['output']>;
+  badge?: Maybe<Scalars['String']['output']>;
+  rating?: Maybe<Scalars['Float']['output']>;
+  reviewCount?: Maybe<Scalars['Float']['output']>;
+  featured?: Maybe<Scalars['Boolean']['output']>;
+  publishedAt?: Maybe<Scalars['String']['output']>;
   id: Scalars['ID']['output'];
   _sys: SystemInfo;
   _values: Scalars['JSON']['output'];
 };
 
 export type StringFilter = {
+  startsWith?: InputMaybe<Scalars['String']['input']>;
+  eq?: InputMaybe<Scalars['String']['input']>;
+  exists?: InputMaybe<Scalars['Boolean']['input']>;
+  in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
+export type ImageFilter = {
   startsWith?: InputMaybe<Scalars['String']['input']>;
   eq?: InputMaybe<Scalars['String']['input']>;
   exists?: InputMaybe<Scalars['Boolean']['input']>;
@@ -213,25 +226,32 @@ export type NumberFilter = {
   in?: InputMaybe<Array<InputMaybe<Scalars['Float']['input']>>>;
 };
 
-export type ImageFilter = {
-  startsWith?: InputMaybe<Scalars['String']['input']>;
-  eq?: InputMaybe<Scalars['String']['input']>;
-  exists?: InputMaybe<Scalars['Boolean']['input']>;
-  in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
-};
-
 export type BooleanFilter = {
   eq?: InputMaybe<Scalars['Boolean']['input']>;
   exists?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
+export type DatetimeFilter = {
+  after?: InputMaybe<Scalars['String']['input']>;
+  before?: InputMaybe<Scalars['String']['input']>;
+  eq?: InputMaybe<Scalars['String']['input']>;
+  exists?: InputMaybe<Scalars['Boolean']['input']>;
+  in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
+};
+
 export type ProductFilter = {
-  name?: InputMaybe<StringFilter>;
-  price?: InputMaybe<NumberFilter>;
-  amazonUrl?: InputMaybe<StringFilter>;
+  title?: InputMaybe<StringFilter>;
+  description?: InputMaybe<StringFilter>;
+  price?: InputMaybe<StringFilter>;
+  originalPrice?: InputMaybe<StringFilter>;
+  affiliateLink?: InputMaybe<StringFilter>;
   image?: InputMaybe<ImageFilter>;
-  isActive?: InputMaybe<BooleanFilter>;
   category?: InputMaybe<StringFilter>;
+  badge?: InputMaybe<StringFilter>;
+  rating?: InputMaybe<NumberFilter>;
+  reviewCount?: InputMaybe<NumberFilter>;
+  featured?: InputMaybe<BooleanFilter>;
+  publishedAt?: InputMaybe<DatetimeFilter>;
 };
 
 export type ProductConnectionEdges = {
@@ -257,14 +277,6 @@ export type Blog = Node & Document & {
   id: Scalars['ID']['output'];
   _sys: SystemInfo;
   _values: Scalars['JSON']['output'];
-};
-
-export type DatetimeFilter = {
-  after?: InputMaybe<Scalars['String']['input']>;
-  before?: InputMaybe<Scalars['String']['input']>;
-  eq?: InputMaybe<Scalars['String']['input']>;
-  exists?: InputMaybe<Scalars['Boolean']['input']>;
-  in?: InputMaybe<Array<InputMaybe<Scalars['String']['input']>>>;
 };
 
 export type RichTextFilter = {
@@ -376,12 +388,18 @@ export type DocumentMutation = {
 };
 
 export type ProductMutation = {
-  name?: InputMaybe<Scalars['String']['input']>;
-  price?: InputMaybe<Scalars['Float']['input']>;
-  amazonUrl?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
+  description?: InputMaybe<Scalars['String']['input']>;
+  price?: InputMaybe<Scalars['String']['input']>;
+  originalPrice?: InputMaybe<Scalars['String']['input']>;
+  affiliateLink?: InputMaybe<Scalars['String']['input']>;
   image?: InputMaybe<Scalars['String']['input']>;
-  isActive?: InputMaybe<Scalars['Boolean']['input']>;
   category?: InputMaybe<Scalars['String']['input']>;
+  badge?: InputMaybe<Scalars['String']['input']>;
+  rating?: InputMaybe<Scalars['Float']['input']>;
+  reviewCount?: InputMaybe<Scalars['Float']['input']>;
+  featured?: InputMaybe<Scalars['Boolean']['input']>;
+  publishedAt?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type BlogMutation = {
@@ -392,7 +410,7 @@ export type BlogMutation = {
   body?: InputMaybe<Scalars['JSON']['input']>;
 };
 
-export type ProductPartsFragment = { __typename: 'Product', name: string, price?: number | null, amazonUrl?: string | null, image?: string | null, isActive?: boolean | null, category?: string | null };
+export type ProductPartsFragment = { __typename: 'Product', title: string, description?: string | null, price?: string | null, originalPrice?: string | null, affiliateLink: string, image?: string | null, category?: string | null, badge?: string | null, rating?: number | null, reviewCount?: number | null, featured?: boolean | null, publishedAt?: string | null };
 
 export type BlogPartsFragment = { __typename: 'Blog', title: string, date: string, coverImage?: string | null, excerpt?: string | null, body?: any | null };
 
@@ -401,7 +419,7 @@ export type ProductQueryVariables = Exact<{
 }>;
 
 
-export type ProductQuery = { __typename?: 'Query', product: { __typename: 'Product', id: string, name: string, price?: number | null, amazonUrl?: string | null, image?: string | null, isActive?: boolean | null, category?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
+export type ProductQuery = { __typename?: 'Query', product: { __typename: 'Product', id: string, title: string, description?: string | null, price?: string | null, originalPrice?: string | null, affiliateLink: string, image?: string | null, category?: string | null, badge?: string | null, rating?: number | null, reviewCount?: number | null, featured?: boolean | null, publishedAt?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } };
 
 export type ProductConnectionQueryVariables = Exact<{
   before?: InputMaybe<Scalars['String']['input']>;
@@ -413,7 +431,7 @@ export type ProductConnectionQueryVariables = Exact<{
 }>;
 
 
-export type ProductConnectionQuery = { __typename?: 'Query', productConnection: { __typename?: 'ProductConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'ProductConnectionEdges', cursor: string, node?: { __typename: 'Product', id: string, name: string, price?: number | null, amazonUrl?: string | null, image?: string | null, isActive?: boolean | null, category?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
+export type ProductConnectionQuery = { __typename?: 'Query', productConnection: { __typename?: 'ProductConnection', totalCount: number, pageInfo: { __typename?: 'PageInfo', hasPreviousPage: boolean, hasNextPage: boolean, startCursor: string, endCursor: string }, edges?: Array<{ __typename?: 'ProductConnectionEdges', cursor: string, node?: { __typename: 'Product', id: string, title: string, description?: string | null, price?: string | null, originalPrice?: string | null, affiliateLink: string, image?: string | null, category?: string | null, badge?: string | null, rating?: number | null, reviewCount?: number | null, featured?: boolean | null, publishedAt?: string | null, _sys: { __typename?: 'SystemInfo', filename: string, basename: string, hasReferences?: boolean | null, breadcrumbs: Array<string>, path: string, relativePath: string, extension: string } } | null } | null> | null } };
 
 export type BlogQueryVariables = Exact<{
   relativePath: Scalars['String']['input'];
@@ -437,12 +455,18 @@ export type BlogConnectionQuery = { __typename?: 'Query', blogConnection: { __ty
 export const ProductPartsFragmentDoc = gql`
     fragment ProductParts on Product {
   __typename
-  name
+  title
+  description
   price
-  amazonUrl
+  originalPrice
+  affiliateLink
   image
-  isActive
   category
+  badge
+  rating
+  reviewCount
+  featured
+  publishedAt
 }
     `;
 export const BlogPartsFragmentDoc = gql`
