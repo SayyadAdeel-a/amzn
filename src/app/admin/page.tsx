@@ -8,7 +8,8 @@ import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore"
 export default function AdminDashboard() {
   const [auth, setAuth] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<"smart-add" | "products" | "blogs">("smart-add");
+  const [activeTab, setActiveTab] = useState<"overview" | "smart-add" | "products" | "blogs">("overview");
+  const [trends, setTrends] = useState<any[]>([]);
 
   // Form states - Smart Add
   const [url, setUrl] = useState("");
@@ -44,8 +45,19 @@ export default function AdminDashboard() {
     if (isAuthenticated) {
       fetchList("products");
       fetchList("blogs");
+      fetchTrends();
     }
   }, [isAuthenticated]);
+
+  const fetchTrends = async () => {
+    try {
+      const res = await fetch("/api/pinterest/trends");
+      const data = await res.json();
+      setTrends(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,10 +242,45 @@ export default function AdminDashboard() {
 
         {/* TABS */}
         <div className="flex gap-4 border-b border-zinc-800 pb-4 overflow-x-auto">
+          <button onClick={() => setActiveTab("overview")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "overview" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Overview</button>
           <button onClick={() => setActiveTab("smart-add")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "smart-add" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Smart Add Product</button>
           <button onClick={() => setActiveTab("products")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "products" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Products</button>
           <button onClick={() => setActiveTab("blogs")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "blogs" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Blogs</button>
         </div>
+
+        {/* TAB 0: OVERVIEW */}
+        {activeTab === "overview" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center text-center">
+                <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest mb-2">Total Products</span>
+                <span className="text-5xl font-black text-brand">{products.length}</span>
+              </div>
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 flex flex-col items-center justify-center text-center">
+                <span className="text-zinc-400 text-sm font-bold uppercase tracking-widest mb-2">Total Blogs</span>
+                <span className="text-5xl font-black text-brand">{blogs.length}</span>
+              </div>
+            </div>
+
+            <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+              <h2 className="text-xl font-bold text-white mb-6">Live Trends Analysis</h2>
+              {trends.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {trends.slice(0, 15).map((t, i) => (
+                    <div key={i} className="bg-surface p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
+                      <span className="text-white font-bold capitalize truncate mr-2">{t.keyword}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-brand font-black bg-brand/10 px-2 py-1 rounded-md">{t.score > 0 ? Math.round(t.score) : 90}+ Score</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-zinc-500">Loading trends...</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* TAB 1: SMART ADD */}
         {activeTab === "smart-add" && (
