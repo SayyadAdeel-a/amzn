@@ -1,11 +1,10 @@
 import Image from "next/image"
+import Link from "next/link"
 
 const ProductCard = ({ product }) => {
   return (
-    <a
-      href={product.affiliateLink}
-      target="_blank"
-      rel="noopener noreferrer sponsored"
+    <Link
+      href={`/product/${product.id}`}
       className="group block bg-surface-2 rounded-2xl overflow-hidden border border-zinc-800 hover:border-zinc-600 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/10"
     >
       <div className="relative aspect-square overflow-hidden bg-surface-3">
@@ -39,7 +38,7 @@ const ProductCard = ({ product }) => {
           </svg>
         </span>
       </div>
-    </a>
+    </Link>
   )
 }
 

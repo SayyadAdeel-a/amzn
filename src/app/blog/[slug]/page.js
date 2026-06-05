@@ -58,9 +58,28 @@ export default async function BlogPost({ params }) {
   const data = blogSnap.data();
   const markdownContent = data.body || "";
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": data.title,
+    "description": data.excerpt,
+    "datePublished": data.date,
+    "author": {
+      "@type": "Person",
+      "name": "FIFA 2026 Gear Team"
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <Navbar />
+      
+      {/* Article JSON-LD */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      
       <main className="flex-grow py-32 px-4 max-w-3xl mx-auto w-full">
         <article className="max-w-prose mx-auto">
           <header className="mb-12 text-center">

@@ -1,27 +1,23 @@
 "use client"
+import Link from "next/link"
 import { useState } from "react"
 import ProductCard from "./ProductCard"
 
 const PER_PAGE = 4
 
-const ProductsGrid = ({ products }) => {
+const ProductsGrid = ({ products, activeCategoryProp, allCategories }) => {
   const [page, setPage] = useState(1)
   const [activeCategory, setActiveCategory] = useState("All")
   
-  const categories = ["All", ...new Set(products.map(p => p.category).filter(Boolean))]
+  const categories = allCategories || ["All", ...new Set(products.map(p => p.category).filter(Boolean))]
   
-  const filteredProducts = activeCategory === "All" 
+  const filteredProducts = (activeCategoryProp || activeCategory) === "All" 
     ? products 
-    : products.filter(p => p.category === activeCategory)
+    : products.filter(p => p.category === (activeCategoryProp || activeCategory))
 
   const totalPages = Math.ceil(filteredProducts.length / PER_PAGE)
   const start = (page - 1) * PER_PAGE
   const paged = filteredProducts.slice(start, start + PER_PAGE)
-
-  const handleCategoryClick = (cat) => {
-    setActiveCategory(cat)
-    setPage(1)
-  }
 
   return (
     <section id="products" className="py-20 sm:py-28 px-4 scroll-mt-20">
@@ -31,7 +27,7 @@ const ProductsGrid = ({ products }) => {
             Shop Trending
           </span>
           <h2 className="text-3xl sm:text-4xl font-black text-white mt-3">
-            Trending Products
+            {activeCategoryProp && activeCategoryProp !== "All" ? `${activeCategoryProp} Collection` : "Trending Products"}
           </h2>
           <p className="text-zinc-400 mt-3 max-w-xl mx-auto">
             Viral football gear and streetwear picks curated from Amazon's best sellers.
@@ -39,19 +35,24 @@ const ProductsGrid = ({ products }) => {
         </div>
 
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map(cat => (
-            <button
-              key={cat}
-              onClick={() => handleCategoryClick(cat)}
-              className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
-                activeCategory === cat
-                  ? "bg-brand text-black shadow-lg shadow-brand/20"
-                  : "bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {categories.map(cat => {
+            const isActive = (activeCategoryProp || activeCategory) === cat;
+            const href = cat === "All" ? "/#products" : `/category/${cat.toLowerCase()}`;
+            
+            return (
+              <Link
+                key={cat}
+                href={href}
+                className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
+                  isActive
+                    ? "bg-brand text-black shadow-lg shadow-brand/20"
+                    : "bg-surface-2 border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
+                }`}
+              >
+                {cat}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-6">
