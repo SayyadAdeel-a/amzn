@@ -1,7 +1,4 @@
 const FinalCTA = () => {
-  const scrollToProducts = () => {
-    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })
-  }
 
   return (
     <section className="relative py-24 sm:py-32 px-4 overflow-hidden">
@@ -21,9 +18,9 @@ const FinalCTA = () => {
           Limited stock on trending football gear and streetwear. Grab yours before they sell out.
         </p>
 
-        <button
-          onClick={scrollToProducts}
-          className="group relative px-10 py-4 bg-brand text-black font-bold text-lg rounded-full hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/30 hover:-translate-y-0.5"
+        <a
+          href="#products"
+          className="group relative px-10 py-4 bg-brand text-black font-bold text-lg rounded-full hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/30 hover:-translate-y-0.5 inline-block"
         >
           <span className="relative z-10 flex items-center gap-2">
             Shop Now
@@ -37,7 +34,7 @@ const FinalCTA = () => {
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
           </span>
-        </button>
+        </a>
       </div>
     </section>
   )

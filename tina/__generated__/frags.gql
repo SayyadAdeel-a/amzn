@@ -1,0 +1,18 @@
+fragment ProductParts on Product {
+  __typename
+  name
+  price
+  amazonUrl
+  image
+  isActive
+  category
+}
+
+fragment BlogParts on Blog {
+  __typename
+  title
+  date
+  coverImage
+  excerpt
+  body
+}

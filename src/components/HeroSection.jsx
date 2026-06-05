@@ -1,23 +1,16 @@
-import products from "../data/products"
+import Image from "next/image"
 
-const bgProducts = [products[1], products[0], products[4], products[3], products[2]]
-
-const HeroSection = () => {
-  const scrollToProducts = () => {
-    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" })
-  }
+const HeroSection = ({ products }) => {
+  const bgProducts = [products[1], products[0], products[4], products[3], products[2]].filter(Boolean);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-surface via-surface/95 to-surface" />
 
       {bgProducts.map((p, i) => (
-        <img
+        <div
           key={p.id}
-          src={p.image}
-          alt=""
-          loading="eager"
-          className="absolute hidden md:block w-64 lg:w-80 opacity-50 object-cover rounded-2xl"
+          className="absolute hidden md:block w-64 lg:w-80 opacity-50 rounded-2xl overflow-hidden aspect-[4/5]"
           style={{
             top: `${15 + i * 18}%`,
             left: i % 2 === 0 ? `${-5 + (i % 3) * 8}%` : 'auto',
@@ -25,7 +18,16 @@ const HeroSection = () => {
             transform: `rotate(${i % 2 === 0 ? '-' : ''}${8 + i * 4}deg)`,
             filter: 'blur(1px)',
           }}
-        />
+        >
+          <Image
+            src={p.image}
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 256px, 320px"
+            priority={true}
+            className="object-cover"
+          />
+        </div>
       ))}
 
       <video
@@ -61,19 +63,19 @@ const HeroSection = () => {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button
-            onClick={scrollToProducts}
-            className="group relative px-8 py-4 bg-brand text-black font-bold text-lg rounded-full hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/30 hover:-translate-y-0.5"
+          <a
+            href="#products"
+            className="group relative px-8 py-4 bg-brand text-black font-bold text-lg rounded-full hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/25 hover:shadow-xl hover:shadow-brand/30 hover:-translate-y-0.5 inline-block"
           >
             <span className="relative z-10">Explore Trending Products</span>
-          </button>
+          </a>
 
-          <button
-            onClick={scrollToProducts}
-            className="px-8 py-4 border border-zinc-700 text-white font-semibold text-lg rounded-full hover:bg-white/5 hover:border-zinc-500 transition-all duration-300"
+          <a
+            href="#products"
+            className="px-8 py-4 border border-zinc-700 text-white font-semibold text-lg rounded-full hover:bg-white/5 hover:border-zinc-500 transition-all duration-300 inline-block"
           >
             View Deals
-          </button>
+          </a>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
-import products from "../data/products"
+"use client"
+import Image from "next/image"
 
-const ProductMarquee = () => {
+const ProductMarquee = ({ products }) => {
   const items = [...products, ...products]
 
   return (
@@ -19,13 +20,15 @@ const ProductMarquee = () => {
               href={product.amazonUrl}
               target="_blank"
               rel="noopener noreferrer sponsored"
-              className="flex-shrink-0 w-48 sm:w-56 aspect-square rounded-xl overflow-hidden bg-surface-2 border border-zinc-800 hover:border-zinc-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand/10"
+              className="relative flex-shrink-0 w-48 sm:w-56 aspect-square rounded-xl overflow-hidden bg-surface-2 border border-zinc-800 hover:border-zinc-500 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-brand/10"
             >
-              <img
+              <Image
                 src={product.image}
                 alt={product.name}
-                loading="lazy"
-                className="w-full h-full object-cover"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                priority={true}
+                className="object-cover"
               />
             </a>
           ))}
