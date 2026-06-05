@@ -115,6 +115,8 @@ export default function AdminDashboard() {
       });
       const data = await res.json();
       setFetchedData(data);
+      if (data.rating) setRating(data.rating);
+      if (data.reviewCount) setReviewCount(data.reviewCount);
     } catch (error) {
       console.error(error);
       alert("Failed to fetch Amazon data.");
@@ -304,6 +306,14 @@ export default function AdminDashboard() {
                       <option value="hot">Hot</option>
                       <option value="new">New</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Rating (Out of 5)</label>
+                    <input type="number" step="0.1" min="0" max="5" value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Review Count</label>
+                    <input type="number" min="0" value={reviewCount} onChange={(e) => setReviewCount(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
                   </div>
                   <div className="flex items-center gap-3 md:col-span-2">
                     <input type="checkbox" id="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-5 h-5 accent-brand" />

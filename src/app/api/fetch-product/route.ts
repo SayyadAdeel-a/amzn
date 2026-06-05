@@ -51,6 +51,21 @@ export async function POST(req: Request) {
       }
     }
 
+    // Amazon rating and review count extraction
+    let rating = 5;
+    let reviewCount = 0;
+    try {
+      const ratingText = $("span.a-icon-alt").first().text();
+      const ratingMatch = ratingText.match(/([0-9.]+)\s*out of/);
+      if (ratingMatch) rating = parseFloat(ratingMatch[1]);
+
+      const reviewText = $("#acrCustomerReviewText").first().text();
+      const reviewMatch = reviewText.replace(/,/g, "").match(/([0-9]+)/);
+      if (reviewMatch) reviewCount = parseInt(reviewMatch[1], 10);
+    } catch (e) {
+      console.error("Error parsing reviews:", e);
+    }
+
     // ASIN Fallback for Images
     // If Amazon blocks the fetch (e.g., Captcha page), we can still construct the official Affiliate Image URL using the ASIN!
     let finalImage = image.trim();
@@ -68,6 +83,8 @@ export async function POST(req: Request) {
       image: finalImage,
       price: price.trim(),
       url: canonicalUrl.trim(),
+      rating,
+      reviewCount,
     });
   } catch (error) {
     console.error("Error fetching product:", error);
