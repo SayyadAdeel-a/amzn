@@ -7,15 +7,6 @@ import { doc, getDoc, collection, getDocs } from "firebase/firestore"
 
 export const revalidate = 60;
 
-export async function generateStaticParams() {
-  const productsCol = collection(db, "products");
-  const productSnapshot = await getDocs(productsCol);
-  
-  return productSnapshot.docs.map(doc => ({
-    slug: doc.id,
-  }));
-}
-
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const productRef = doc(db, "products", slug);

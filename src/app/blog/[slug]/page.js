@@ -6,15 +6,6 @@ import { doc, getDoc, collection, getDocs } from "firebase/firestore"
 
 export const revalidate = 60; // Optional: revalidate every minute for caching
 
-export async function generateStaticParams() {
-  const blogsCol = collection(db, "blogs");
-  const blogSnapshot = await getDocs(blogsCol);
-  
-  return blogSnapshot.docs.map(doc => ({
-    slug: doc.id,
-  }));
-}
-
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const blogRef = doc(db, "blogs", slug);
