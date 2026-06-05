@@ -126,7 +126,7 @@ export default async function ProductPage({ params }) {
 
           {/* Product Details */}
           <div className="flex flex-col">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-6">
+            <h1 className="text-2xl sm:text-3xl font-black text-white leading-snug mb-6">
               {product.title || product.name || "Untitled Product"}
             </h1>
 
