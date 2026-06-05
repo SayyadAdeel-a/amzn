@@ -5,7 +5,7 @@ var config_default = defineConfig({
   // clientId: process.env.NEXT_PUBLIC_TINA_CLIENT_ID || "***",
   // token: process.env.TINA_TOKEN || "***",
   build: {
-    outputFolder: "admin",
+    outputFolder: "tinacms",
     publicFolder: "public"
   },
   media: {
