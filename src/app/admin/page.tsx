@@ -329,9 +329,17 @@ export default function AdminDashboard() {
               {products.map(p => (
                 <div key={p.id} className="flex items-center justify-between bg-surface p-4 rounded-xl border border-zinc-800">
                   <div className="flex items-center gap-4">
-                    {p.image && <div className="w-12 h-12 relative rounded overflow-hidden"><Image src={p.image} alt="" fill className="object-cover" /></div>}
+                    {p.image ? (
+                      <div className="w-12 h-12 relative rounded overflow-hidden flex-shrink-0">
+                        <Image src={p.image} alt="" fill className="object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] text-zinc-500">No Img</span>
+                      </div>
+                    )}
                     <div>
-                      <p className="font-bold text-white">{p.title}</p>
+                      <p className="font-bold text-white line-clamp-1">{p.title || p.name || "Untitled Product"}</p>
                       <p className="text-sm text-zinc-400">${p.price} • {p.category}</p>
                     </div>
                   </div>

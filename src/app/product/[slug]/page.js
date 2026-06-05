@@ -105,25 +105,29 @@ export default async function ProductPage({ params }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-start">
           
           {/* Image Gallery */}
-          <div className="relative aspect-square rounded-3xl overflow-hidden bg-surface-2 border border-zinc-800">
+          <div className="relative aspect-square rounded-3xl overflow-hidden bg-surface-2 border border-zinc-800 flex items-center justify-center">
             {product.badge && product.badge !== 'none' && (
               <div className="absolute top-6 left-6 z-10 px-4 py-2 bg-brand text-black text-xs font-black uppercase tracking-widest rounded-full">
                 {product.badge}
               </div>
             )}
-            <Image
-              src={product.image}
-              alt={product.title}
-              fill
-              className="object-cover"
-              priority
-            />
+            {product.image ? (
+              <Image
+                src={product.image}
+                alt={product.title || product.name || "Product"}
+                fill
+                className="object-cover"
+                priority
+              />
+            ) : (
+              <span className="text-zinc-500 font-medium">No Image Provided</span>
+            )}
           </div>
 
           {/* Product Details */}
           <div className="flex flex-col">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white leading-tight mb-6">
-              {product.title}
+              {product.title || product.name || "Untitled Product"}
             </h1>
 
             <div className="flex items-center gap-4 mb-8">
