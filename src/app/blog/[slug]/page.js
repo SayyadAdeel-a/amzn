@@ -79,7 +79,13 @@ export default async function BlogPost({ params }) {
         />
           
           <main className="flex-grow py-24 px-4 sm:px-6 lg:px-8 w-full max-w-[90rem] mx-auto">
-            <AnimatedHero title={data.title} excerpt={data.excerpt} overline="Editorial" />
+            <AnimatedHero 
+              title={data.title} 
+              excerpt={data.excerpt} 
+              overline="Editorial" 
+              titleClassName="text-3xl sm:text-4xl md:text-5xl"
+              excerptClassName="text-lg md:text-xl"
+            />
             
             <div className="flex flex-col lg:flex-row gap-16 lg:gap-32 relative max-w-7xl">
               {/* Sticky Meta Sidebar */}

@@ -124,6 +124,7 @@ export default async function ProductPage({ params }) {
               <AnimatedHero 
                 title={product.title || product.name || "Untitled Product"} 
                 excerpt="" 
+                titleClassName="text-3xl sm:text-4xl md:text-5xl"
               />
             </div>
 

@@ -57,6 +57,8 @@ const HeroSection = ({ products }) => {
           <AnimatedHero 
             title="FIFA 2026 Football Gear & Streetwear Drops" 
             excerpt="Trending sneakers, jerseys, and football fashion from global teams."
+            titleClassName="text-4xl sm:text-5xl md:text-6xl"
+            excerptClassName="text-lg md:text-xl"
           />
         </div>
 

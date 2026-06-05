@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 
-export default function AnimatedHero({ title, excerpt, overline }) {
+export default function AnimatedHero({ title, excerpt, overline, titleClassName, excerptClassName }) {
   // Split title into words for individual staggering
   const words = title.split(" ");
 
@@ -75,7 +75,10 @@ export default function AnimatedHero({ title, excerpt, overline }) {
         </div>
       )}
       
-      <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[0.95] mb-10 tracking-tighter" style={{ textWrap: 'balance' }}>
+      <h1 
+        className={`${titleClassName || 'text-5xl sm:text-6xl md:text-8xl'} font-black text-white leading-[0.95] mb-10 tracking-tighter`} 
+        style={{ textWrap: 'balance' }}
+      >
         {words.map((word, i) => (
           <span key={i} className="inline-block overflow-hidden pb-2 mr-[0.25em]">
             <motion.span variants={wordVariants} className="inline-block origin-bottom">
@@ -88,7 +91,7 @@ export default function AnimatedHero({ title, excerpt, overline }) {
       {excerpt && (
         <motion.p 
           variants={excerptVariants}
-          className="text-xl md:text-3xl text-zinc-400 font-medium leading-snug max-w-3xl tracking-tight" 
+          className={`${excerptClassName || 'text-xl md:text-3xl'} text-zinc-400 font-medium leading-snug max-w-3xl tracking-tight`} 
           style={{ textWrap: 'pretty' }}
         >
           {excerpt}

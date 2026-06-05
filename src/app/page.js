@@ -38,7 +38,12 @@ export default async function Home() {
       <Navbar />
       <main className="flex-grow">
         <HeroSection products={products} />
+        
         <ProductMarquee products={products} />
+        
+        <div id="products" className="pt-8">
+          <ProductsGrid products={products} />
+        </div>
         
         <div id="collections" className="pt-8">
           <ProductCollection 
@@ -52,10 +57,6 @@ export default async function Home() {
             description="Fresh streetwear drops and newly released jerseys." 
             products={newProducts} 
           />
-        </div>
-
-        <div id="products">
-          <ProductsGrid products={products} />
         </div>
         
         <WhyThisSite />
