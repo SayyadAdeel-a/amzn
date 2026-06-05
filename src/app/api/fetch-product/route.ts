@@ -32,11 +32,24 @@ export async function POST(req: Request) {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Extract OG tags
+    // Extract Title & Image
     const title = $('meta[property="og:title"]').attr("content") || $('title').text() || "";
-    const description = $('meta[property="og:description"]').attr("content") || $('meta[name="description"]').attr("content") || "";
     const image = $('meta[property="og:image"]').attr("content") || "";
     const canonicalUrl = $('meta[property="og:url"]').attr("content") || url;
+
+    // Enhance Description Extraction (Amazon often blocks standard bots from seeing og:description)
+    let description = "";
+    const bullets: string[] = [];
+    $('#feature-bullets ul li span.a-list-item').each((i, el) => {
+      const text = $(el).text().trim();
+      if (text && text.length > 10) bullets.push(text);
+    });
+    
+    if (bullets.length > 0) {
+      description = bullets.slice(0, 5).join(" "); // Take top 5 bullets
+    } else {
+      description = $('#productDescription p').first().text().trim() || $('meta[name="description"]').attr("content") || "";
+    }
 
     // Amazon price extraction can be tricky, try multiple selectors
     let price = "";
@@ -51,9 +64,10 @@ export async function POST(req: Request) {
       }
     }
 
-    // Amazon rating and review count extraction
+    // Amazon rating, review count, and actual review text extraction
     let rating = 5;
     let reviewCount = 0;
+    const reviews: string[] = [];
     try {
       const ratingText = $("span.a-icon-alt").first().text();
       const ratingMatch = ratingText.match(/([0-9.]+)\s*out of/);
@@ -62,6 +76,14 @@ export async function POST(req: Request) {
       const reviewText = $("#acrCustomerReviewText").first().text();
       const reviewMatch = reviewText.replace(/,/g, "").match(/([0-9]+)/);
       if (reviewMatch) reviewCount = parseInt(reviewMatch[1], 10);
+
+      // Extract up to 10 actual written reviews from the page
+      $(".review-text-content span").each((i, el) => {
+        if (i < 10) {
+          const rText = $(el).text().trim();
+          if (rText.length > 20) reviews.push(rText); // Ensure it's a substantive review
+        }
+      });
     } catch (e) {
       console.error("Error parsing reviews:", e);
     }
@@ -77,6 +99,46 @@ export async function POST(req: Request) {
       }
     }
 
+    // Use AI to Categorize the Product
+    let category = "jerseys";
+    let badge = "none";
+
+    if (process.env.GROQ_API_KEY) {
+      try {
+        const catRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+              { 
+                role: "system", 
+                content: "You are an AI classifier for an affiliate e-commerce store. Categorize the product. Return ONLY raw JSON in this format: { \"category\": \"jerseys\" | \"balls\" | \"footwear\" | \"accessories\", \"badge\": \"none\" | \"hot\" | \"new\" }. Infer 'hot' if the product seems like a trending/popular item, or 'new' if it explicitly mentions 2026/new release. Return ONLY JSON." 
+              },
+              { 
+                role: "user", 
+                content: `Title: ${title}\nDescription: ${description}` 
+              }
+            ],
+            temperature: 0.1,
+            response_format: { type: "json_object" }
+          })
+        });
+
+        if (catRes.ok) {
+          const aiData = await catRes.json();
+          const parsed = JSON.parse(aiData.choices[0].message.content);
+          if (parsed.category) category = parsed.category;
+          if (parsed.badge) badge = parsed.badge;
+        }
+      } catch (err) {
+        console.error("AI Categorization failed, using defaults.", err);
+      }
+    }
+
     return NextResponse.json({
       title: title.trim(),
       description: description.trim(),
@@ -85,6 +147,9 @@ export async function POST(req: Request) {
       url: canonicalUrl.trim(),
       rating,
       reviewCount,
+      reviews,
+      category,
+      badge
     });
   } catch (error) {
     console.error("Error fetching product:", error);
@@ -107,6 +172,9 @@ export async function POST(req: Request) {
       image: fallbackImage,
       price: "",
       url: "",
+      reviews: [],
+      category: "jerseys",
+      badge: "none"
     });
   }
 }

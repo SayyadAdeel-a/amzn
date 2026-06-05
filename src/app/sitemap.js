@@ -1,6 +1,9 @@
 import { db } from "../lib/firebase"
 import { collection, getDocs } from "firebase/firestore"
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function sitemap() {
   const baseUrl = "https://fifa26-lake.vercel.app"
 

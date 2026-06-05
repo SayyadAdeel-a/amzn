@@ -32,6 +32,7 @@ export default function AdminDashboard() {
 
   // States - Blog Editor
   const [blogForm, setBlogForm] = useState({ slug: "", title: "", excerpt: "", body: "" });
+  const [isEnhancingBlog, setIsEnhancingBlog] = useState(false);
 
   useEffect(() => {
     const savedAuth = localStorage.getItem("admin_auth");
@@ -127,6 +128,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleEnhanceBlog = async () => {
+    if (!blogForm.body) return alert("Write some blog content first!");
+    setIsEnhancingBlog(true);
+    try {
+      const res = await fetch("/api/enhance-blog", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: blogForm.body, products })
+      });
+      const data = await res.json();
+      if (data.enhancedBody) {
+        setBlogForm({ ...blogForm, body: data.enhancedBody });
+        alert("Blog successfully enhanced with product links!");
+      } else {
+        alert("Enhancement failed: " + data.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to enhance blog.");
+    } finally {
+      setIsEnhancingBlog(false);
+    }
+  };
+
   // Add Product Methods
   const fetchAmazonData = async () => {
     if (!url) return;
@@ -145,10 +170,11 @@ export default function AdminDashboard() {
         price: data.price || "",
         originalPrice: "",
         image: data.image || "",
-        category: "jerseys",
-        badge: "none",
+        category: data.category || "jerseys",
+        badge: data.badge || "none",
         rating: data.rating || 5,
         reviewCount: data.reviewCount || 0,
+        reviews: data.reviews || [],
         featured: false,
         affiliateLink: data.url || url
       });
@@ -562,8 +588,13 @@ export default function AdminDashboard() {
                   <label className="block text-xs font-bold text-zinc-400 mb-2">Excerpt</label>
                   <textarea value={blogForm.excerpt} onChange={e => setBlogForm({...blogForm, excerpt: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none h-20 resize-none" required />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 mb-2">Content (Markdown)</label>
+                <div className="relative">
+                  <div className="flex justify-between items-end mb-2">
+                    <label className="block text-xs font-bold text-zinc-400">Content (Markdown)</label>
+                    <button type="button" onClick={handleEnhanceBlog} disabled={isEnhancingBlog || !blogForm.body} className="text-xs bg-brand text-black font-bold px-3 py-1.5 rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50 flex items-center gap-1 shadow-lg shadow-brand/20">
+                      {isEnhancingBlog ? "✨ Enhancing..." : "✨ Enhance Blog (Add Links)"}
+                    </button>
+                  </div>
                   <textarea value={blogForm.body} onChange={e => setBlogForm({...blogForm, body: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none h-64 font-mono text-sm" required />
                 </div>
                 <button type="submit" className="bg-brand text-black font-bold px-6 py-3 rounded-lg hover:bg-brand-light transition-colors">
