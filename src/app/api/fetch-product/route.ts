@@ -9,14 +9,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
 
-    // Set aggressive timeout using AbortController (8 seconds)
+    // Increase timeout to 30 seconds because headless JS rendering takes longer
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-    // Use ScraperAPI to bypass Amazon Captcha
+    // Use ScraperAPI with JS rendering enabled to capture lazy-loaded reviews and videos
     let fetchUrl = url;
     if (process.env.SCRAPER_API_KEY) {
-      fetchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(url)}`;
+      fetchUrl = `http://api.scraperapi.com?api_key=${process.env.SCRAPER_API_KEY}&url=${encodeURIComponent(url)}&render=true`;
     }
 
     const response = await fetch(fetchUrl, {
@@ -76,11 +76,11 @@ export async function POST(req: Request) {
     let salesVolume = "";
     const reviews: string[] = [];
     try {
-      const ratingText = $("span.a-icon-alt").first().text();
+      const ratingText = $("span.a-icon-alt").first().text() || $("i[data-hook='average-star-rating']").text();
       const ratingMatch = ratingText.match(/([0-9.]+)\s*out of/);
       if (ratingMatch) rating = parseFloat(ratingMatch[1]);
 
-      const reviewText = $("#acrCustomerReviewText").first().text();
+      const reviewText = $("#acrCustomerReviewText").first().text() || $("[data-hook='total-review-count']").first().text();
       const reviewMatch = reviewText.replace(/,/g, "").match(/([0-9]+)/);
       if (reviewMatch) reviewCount = parseInt(reviewMatch[1], 10);
       
@@ -88,16 +88,29 @@ export async function POST(req: Request) {
       salesVolume = $("#social-proofing-faceout-title-tk_bought span").text().trim() || 
                     $(".social-proofing-faceout-title-text span").first().text().trim();
 
-      // Extract up to 10 actual written reviews from the page
-      $(".review-text-content span").each((i, el) => {
-        if (i < 10) {
+      // Extract up to 10 actual written reviews (Trying multiple Amazon DOM structures)
+      let reviewElements = $("[data-hook='review-collapsed'] span, .review-text-content span, .a-expander-content.reviewText span");
+      reviewElements.each((i, el) => {
+        if (reviews.length < 10) {
           const rText = $(el).text().trim();
-          if (rText.length > 20) reviews.push(rText); // Ensure it's a substantive review
+          if (rText.length > 20 && !reviews.includes(rText)) {
+            reviews.push(rText);
+          }
         }
       });
     } catch (e) {
       console.error("Error parsing reviews:", e);
     }
+
+    // Video extraction attempt (Amazon hides these in scripts or specific divs)
+    let videoUrl = "";
+    try {
+      // Look for a raw .mp4 link in the HTML string
+      const mp4Match = html.match(/https:\/\/[^"'\s]+\.mp4/i);
+      if (mp4Match) {
+        videoUrl = mp4Match[0];
+      }
+    } catch (e) {}
 
     // ASIN Fallback for Images
     // If Amazon blocks the fetch (e.g., Captcha page), we can still construct the official Affiliate Image URL using the ASIN!
@@ -160,6 +173,7 @@ export async function POST(req: Request) {
       reviewCount,
       reviews,
       salesVolume,
+      videoUrl,
       category,
       badge
     });
@@ -186,6 +200,7 @@ export async function POST(req: Request) {
       url: "",
       reviews: [],
       salesVolume: "",
+      videoUrl: "",
       category: "jerseys",
       badge: "none"
     });

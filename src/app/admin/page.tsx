@@ -176,6 +176,7 @@ export default function AdminDashboard() {
         reviewCount: data.reviewCount || 0,
         reviews: data.reviews || [],
         salesVolume: data.salesVolume || "",
+        videoUrl: data.videoUrl || "",
         featured: false,
         affiliateLink: data.url || url
       });
@@ -440,6 +441,12 @@ export default function AdminDashboard() {
                       💬 Scraped Text Reviews: {productForm.reviews?.length || 0}
                     </div>
                   </div>
+                  {productForm.videoUrl && (
+                    <div className="md:col-span-2 mt-2">
+                      <label className="block text-xs font-bold text-zinc-400 mb-2">Product Video (Scraped from Amazon)</label>
+                      <video src={productForm.videoUrl} controls className="w-full max-w-sm rounded-lg border border-zinc-700" />
+                    </div>
+                  )}
                   <div className="flex items-center gap-3 md:col-span-2">
                     <input type="checkbox" id="featured" checked={productForm.featured} onChange={e => setProductForm({...productForm, featured: e.target.checked})} className="w-5 h-5 accent-brand" />
                     <label htmlFor="featured" className="text-sm font-bold text-white">Featured Product (Shows on homepage)</label>
