@@ -12,6 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL("https://fifa26-lake.vercel.app"),
   title: "FIFA 2026 Gear | Trending Football Jerseys & Streetwear",
   description: "Shop trending football gear, official jerseys, and exclusive streetwear drops for the upcoming FIFA 2026 World Cup. Curated collection of top-rated Amazon finds.",
   keywords: ["FIFA 2026", "football gear", "soccer jerseys", "streetwear", "world cup apparel"],
