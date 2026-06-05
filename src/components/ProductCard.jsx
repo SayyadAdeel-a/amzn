@@ -3,7 +3,7 @@ import Image from "next/image"
 const ProductCard = ({ product }) => {
   return (
     <a
-      href={product.amazonUrl}
+      href={product.affiliateLink}
       target="_blank"
       rel="noopener noreferrer sponsored"
       className="group block bg-surface-2 rounded-2xl overflow-hidden border border-zinc-800 hover:border-zinc-600 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-brand/10"
@@ -11,7 +11,7 @@ const ProductCard = ({ product }) => {
       <div className="relative aspect-square overflow-hidden bg-surface-3">
         <Image
           src={product.image}
-          alt={product.name}
+          alt={product.title}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
           className="object-cover transition-transform duration-700 group-hover:scale-110"
@@ -20,7 +20,7 @@ const ProductCard = ({ product }) => {
 
       <div className="p-4 sm:p-5">
         <h3 className="text-white font-bold text-base sm:text-lg mb-4 line-clamp-2">
-          {product.name}
+          {product.title}
         </h3>
 
         <span className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-black text-sm font-extrabold rounded-xl group-hover:from-amber-300 group-hover:to-orange-400 transition-all duration-300 shadow-lg shadow-orange-500/20 group-hover:shadow-xl group-hover:shadow-orange-500/40 group-hover:-translate-y-0.5">
