@@ -1,30 +1,30 @@
-import fs from "fs"
-import path from "path"
-import matter from "gray-matter"
 import ReactMarkdown from "react-markdown"
 import Navbar from "../../../components/Navbar"
 import Footer from "../../../components/Footer"
+import { db } from "../../../lib/firebase"
+import { doc, getDoc, collection, getDocs } from "firebase/firestore"
+
+export const revalidate = 60; // Optional: revalidate every minute for caching
 
 export async function generateStaticParams() {
-  const blogsDir = path.join(process.cwd(), "content/blogs")
-  if (!fs.existsSync(blogsDir)) return []
+  const blogsCol = collection(db, "blogs");
+  const blogSnapshot = await getDocs(blogsCol);
   
-  const files = fs.readdirSync(blogsDir).filter(file => file.endsWith(".md") || file.endsWith(".mdx"))
-  return files.map(file => ({
-    slug: file.replace(/\.mdx?$/, ""),
-  }))
+  return blogSnapshot.docs.map(doc => ({
+    slug: doc.id,
+  }));
 }
 
 export async function generateMetadata({ params }) {
-  const { slug } = await params
-  const filePath = path.join(process.cwd(), `content/blogs/${slug}.md`)
+  const { slug } = await params;
+  const blogRef = doc(db, "blogs", slug);
+  const blogSnap = await getDoc(blogRef);
   
-  if (!fs.existsSync(filePath)) {
-    return { title: "Post Not Found" }
+  if (!blogSnap.exists()) {
+    return { title: "Post Not Found" };
   }
 
-  const content = fs.readFileSync(filePath, "utf-8")
-  const { data } = matter(content)
+  const data = blogSnap.data();
 
   return {
     title: `${data.title} | FIFA 2026 Gear`,
@@ -39,10 +39,11 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function BlogPost({ params }) {
-  const { slug } = await params
-  const filePath = path.join(process.cwd(), `content/blogs/${slug}.md`)
+  const { slug } = await params;
+  const blogRef = doc(db, "blogs", slug);
+  const blogSnap = await getDoc(blogRef);
   
-  if (!fs.existsSync(filePath)) {
+  if (!blogSnap.exists()) {
     return (
       <div className="min-h-screen flex flex-col font-sans">
         <Navbar />
@@ -54,8 +55,8 @@ export default async function BlogPost({ params }) {
     )
   }
 
-  const content = fs.readFileSync(filePath, "utf-8")
-  const { data, content: markdownContent } = matter(content)
+  const data = blogSnap.data();
+  const markdownContent = data.body || "";
 
   return (
     <div className="min-h-screen flex flex-col font-sans">

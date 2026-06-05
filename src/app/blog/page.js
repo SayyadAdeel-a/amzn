@@ -1,6 +1,5 @@
-import fs from "fs"
-import path from "path"
-import matter from "gray-matter"
+import { db } from "../../lib/firebase"
+import { collection, getDocs } from "firebase/firestore"
 import Link from "next/link"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
@@ -10,25 +9,16 @@ export const metadata = {
   description: "Read the latest news, drops, and trends in football fashion and gear.",
 }
 
+export const revalidate = 60; // Optional: revalidate every minute for caching
+
 export default async function BlogIndex() {
-  const blogsDir = path.join(process.cwd(), "content/blogs")
-  let posts = []
+  const blogsCol = collection(db, "blogs");
+  const blogSnapshot = await getDocs(blogsCol);
   
-  if (fs.existsSync(blogsDir)) {
-    const files = fs.readdirSync(blogsDir).filter(file => file.endsWith(".md") || file.endsWith(".mdx"))
-    
-    posts = files.map(file => {
-      const filePath = path.join(blogsDir, file)
-      const content = fs.readFileSync(filePath, "utf-8")
-      const { data } = matter(content)
-      return {
-        slug: file.replace(/\.mdx?$/, ""),
-        title: data.title,
-        date: data.date,
-        excerpt: data.excerpt,
-      }
-    }).sort((a, b) => new Date(b.date) - new Date(a.date))
-  }
+  const posts = blogSnapshot.docs.map(doc => ({
+    slug: doc.id,
+    ...doc.data()
+  })).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="min-h-screen flex flex-col font-sans">

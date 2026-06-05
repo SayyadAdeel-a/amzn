@@ -3,20 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "tinacms dev -c \"next dev\"",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
-    "@tinacms/cli": "^2.4.3",
     "cheerio": "^1.2.0",
+    "dotenv": "^16.4.7",
+    "firebase": "^11.0.2",
     "gray-matter": "^4.0.3",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-markdown": "^10.1.0",
-    "tinacms": "^3.9.0"
+    "react-markdown": "^10.1.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

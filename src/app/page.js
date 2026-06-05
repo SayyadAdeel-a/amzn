@@ -6,25 +6,15 @@ import WhyThisSite from "../components/WhyThisSite"
 import SocialProof from "../components/SocialProof"
 import FinalCTA from "../components/FinalCTA"
 import Footer from "../components/Footer"
-import fs from "fs"
-import path from "path"
+import { db } from "../lib/firebase"
+import { collection, getDocs } from "firebase/firestore"
+
+export const revalidate = 60; // Optional: revalidate every minute for caching
 
 export default async function Home() {
-  const productsDir = path.join(process.cwd(), "content/products")
-  const productFiles = fs.readdirSync(productsDir)
-  const products = productFiles
-    .filter(file => file.endsWith(".json"))
-    .map(file => {
-      try {
-        const filePath = path.join(productsDir, file)
-        const content = fs.readFileSync(filePath, "utf-8")
-        return JSON.parse(content)
-      } catch (error) {
-        console.error(`Error parsing ${file}:`, error)
-        return null
-      }
-    })
-    .filter(Boolean)
+  const productsCol = collection(db, "products");
+  const productSnapshot = await getDocs(productsCol);
+  const products = productSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
   return (
     <div className="min-h-screen flex flex-col font-sans">

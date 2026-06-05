@@ -2,28 +2,36 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { db } from "../../lib/firebase";
+import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
 
-export default function AddProductPage() {
+export default function AdminDashboard() {
   const [auth, setAuth] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState<"smart-add" | "products" | "blogs">("smart-add");
 
-  // Form states
+  // Form states - Smart Add
   const [url, setUrl] = useState("");
   const [isFetching, setIsFetching] = useState(false);
   const [fetchedData, setFetchedData] = useState<any>(null);
-
   const [isRewriting, setIsRewriting] = useState(false);
   const [rewrittenData, setRewrittenData] = useState<any>(null);
-
-  const [category, setCategory] = useState("Jerseys");
+  const [category, setCategory] = useState("jerseys");
   const [badge, setBadge] = useState("none");
   const [rating, setRating] = useState(5);
   const [reviewCount, setReviewCount] = useState(0);
   const [featured, setFeatured] = useState(false);
   const [originalPrice, setOriginalPrice] = useState("");
-
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ message: string; error?: boolean } | null>(null);
+
+  // States - Manage Products & Blogs
+  const [products, setProducts] = useState<any[]>([]);
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [isLoadingList, setIsLoadingList] = useState(false);
+
+  // States - Blog Editor
+  const [blogForm, setBlogForm] = useState({ slug: "", title: "", excerpt: "", body: "" });
 
   useEffect(() => {
     const savedAuth = localStorage.getItem("admin_auth");
@@ -31,6 +39,13 @@ export default function AddProductPage() {
       setIsAuthenticated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchList("products");
+      fetchList("blogs");
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +57,52 @@ export default function AddProductPage() {
     }
   };
 
+  const fetchList = async (type: "products" | "blogs") => {
+    setIsLoadingList(true);
+    try {
+      const snapshot = await getDocs(collection(db, type));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (type === "products") setProducts(data);
+      if (type === "blogs") setBlogs(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoadingList(false);
+    }
+  };
+
+  const handleDelete = async (type: "products" | "blogs", id: string) => {
+    if (!confirm(`Are you sure you want to delete this ${type === "products" ? "product" : "blog"}?`)) return;
+    try {
+      await deleteDoc(doc(db, type, id));
+      fetchList(type);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete.");
+    }
+  };
+
+  const handleSaveBlog = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blogForm.title || !blogForm.slug || !blogForm.body) return alert("Please fill required fields");
+    
+    try {
+      await setDoc(doc(db, "blogs", blogForm.slug), {
+        title: blogForm.title,
+        excerpt: blogForm.excerpt,
+        body: blogForm.body,
+        date: new Date().toISOString()
+      });
+      alert("Blog Saved!");
+      setBlogForm({ slug: "", title: "", excerpt: "", body: "" });
+      fetchList("blogs");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save blog");
+    }
+  };
+
+  // Smart Add Methods
   const fetchAmazonData = async () => {
     if (!url) return;
     setIsFetching(true);
@@ -92,7 +153,7 @@ export default function AddProductPage() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveProduct = async () => {
     if (!rewrittenData || !fetchedData) return;
     setIsSaving(true);
     setSaveStatus(null);
@@ -113,18 +174,10 @@ export default function AddProductPage() {
     };
 
     try {
-      // 1. Save to TinaCMS (assuming local API route since direct client mutation from browser requires auth/setup)
-      const tinaRes = await fetch("/api/tina/save", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productPayload),
-      });
+      const slug = productPayload.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+      await setDoc(doc(db, "products", slug), productPayload);
+      fetchList("products");
 
-      if (!tinaRes.ok) {
-        throw new Error("Failed to save to TinaCMS");
-      }
-
-      // 2. Pin to Pinterest
       const pinRes = await fetch("/api/pinterest/create-pin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -132,15 +185,14 @@ export default function AddProductPage() {
       });
 
       const pinData = await pinRes.json();
-
       if (pinData.success) {
-        setSaveStatus({ message: "✅ Product saved and Pinterest pin created!" });
+        setSaveStatus({ message: "✅ Product saved to Firebase and Pinterest pin created!" });
       } else {
         setSaveStatus({ message: `✅ Product saved — ⚠️ Pinterest pin failed: ${pinData.error}`, error: true });
       }
     } catch (error) {
       console.error(error);
-      setSaveStatus({ message: "❌ Failed to save product to CMS.", error: true });
+      setSaveStatus({ message: "❌ Failed to save product to Firebase.", error: true });
     } finally {
       setIsSaving(false);
     }
@@ -168,148 +220,178 @@ export default function AddProductPage() {
 
   return (
     <div className="min-h-screen bg-surface font-sans text-foreground py-12 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-5xl mx-auto space-y-8">
         <div>
-          <h1 className="text-3xl font-black text-white">Smart Product Add Pipeline</h1>
-          <p className="text-zinc-400">Fetch, Rewrite, and Auto-Pin products instantly.</p>
+          <h1 className="text-3xl font-black text-white">Storefront CMS</h1>
+          <p className="text-zinc-400">Manage products, blogs, and marketing pipelines.</p>
         </div>
 
-        {/* Step 1: URL Fetch */}
-        <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
-          <h2 className="text-xl font-bold text-white mb-4">1. Fetch Product</h2>
-          <div className="flex gap-3">
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste Amazon product URL"
-              className="flex-1 bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand"
-            />
-            <button
-              onClick={fetchAmazonData}
-              disabled={isFetching || !url}
-              className="bg-brand text-black font-bold px-6 py-3 rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50"
-            >
-              {isFetching ? "Fetching..." : "Fetch Data"}
-            </button>
-          </div>
+        {/* TABS */}
+        <div className="flex gap-4 border-b border-zinc-800 pb-4 overflow-x-auto">
+          <button onClick={() => setActiveTab("smart-add")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "smart-add" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Smart Add Product</button>
+          <button onClick={() => setActiveTab("products")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "products" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Products</button>
+          <button onClick={() => setActiveTab("blogs")} className={`px-4 py-2 font-bold rounded-lg transition-colors ${activeTab === "blogs" ? "bg-brand text-black" : "text-zinc-400 hover:text-white hover:bg-zinc-800"}`}>Manage Blogs</button>
+        </div>
 
-          {fetchedData && (
-            <div className="mt-6 flex gap-4 p-4 bg-surface rounded-xl border border-zinc-800">
-              {fetchedData.image && (
-                <div className="w-24 h-24 relative rounded-lg overflow-hidden flex-shrink-0">
-                  <Image src={fetchedData.image} alt="Preview" fill className="object-cover" />
+        {/* TAB 1: SMART ADD */}
+        {activeTab === "smart-add" && (
+          <div className="space-y-6">
+            <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+              <h2 className="text-xl font-bold text-white mb-4">1. Fetch Product</h2>
+              <div className="flex gap-3">
+                <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste Amazon product URL" className="flex-1 bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+                <button onClick={fetchAmazonData} disabled={isFetching || !url} className="bg-brand text-black font-bold px-6 py-3 rounded-lg hover:bg-brand-light transition-colors disabled:opacity-50">
+                  {isFetching ? "Fetching..." : "Fetch Data"}
+                </button>
+              </div>
+              {fetchedData && (
+                <div className="mt-6 flex gap-4 p-4 bg-surface rounded-xl border border-zinc-800">
+                  {fetchedData.image && (
+                    <div className="w-24 h-24 relative rounded-lg overflow-hidden flex-shrink-0">
+                      <Image src={fetchedData.image} alt="Preview" fill className="object-cover" />
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-white line-clamp-2">{fetchedData.title}</p>
+                    <p className="text-brand font-bold mt-2">${fetchedData.price}</p>
+                  </div>
                 </div>
               )}
-              <div>
-                <p className="text-sm font-semibold text-white line-clamp-2">{fetchedData.title}</p>
-                <p className="text-brand font-bold mt-2">${fetchedData.price}</p>
-              </div>
             </div>
-          )}
-        </div>
 
-        {/* Step 2: Groq Rewrite */}
-        {fetchedData && (
-          <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-white">2. Pinterest Optimization</h2>
-              <button
-                onClick={rewriteForPinterest}
-                disabled={isRewriting}
-                className="bg-[#181818] border border-zinc-700 text-white font-bold px-4 py-2 rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 text-sm"
-              >
-                {isRewriting ? "Processing..." : "Rewrite for Pinterest with AI"}
-              </button>
-            </div>
+            {fetchedData && (
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-white">2. Pinterest Optimization</h2>
+                  <button onClick={rewriteForPinterest} disabled={isRewriting} className="bg-[#181818] border border-zinc-700 text-white font-bold px-4 py-2 rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50 text-sm">
+                    {isRewriting ? "Processing..." : "Rewrite for Pinterest with AI"}
+                  </button>
+                </div>
+                {rewrittenData && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-surface p-4 rounded-xl border border-zinc-800">
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Original (Amazon)</span>
+                      <input type="text" readOnly value={fetchedData.title} className="w-full bg-transparent border-b border-zinc-800 pb-2 mb-3 text-sm text-zinc-400 focus:outline-none" />
+                      <textarea readOnly value={fetchedData.description} className="w-full bg-transparent text-sm text-zinc-400 resize-none h-32 focus:outline-none" />
+                    </div>
+                    <div className="bg-brand/5 p-4 rounded-xl border border-brand/20">
+                      <span className="text-xs font-bold text-brand uppercase tracking-wider block mb-2 flex items-center gap-1">✨ Optimized by AI</span>
+                      <input type="text" value={rewrittenData.title} onChange={(e) => setRewrittenData({ ...rewrittenData, title: e.target.value })} className="w-full bg-transparent border-b border-brand/30 pb-2 mb-3 text-sm text-white font-semibold focus:outline-none focus:border-brand" />
+                      <textarea value={rewrittenData.description} onChange={(e) => setRewrittenData({ ...rewrittenData, description: e.target.value })} className="w-full bg-transparent text-sm text-zinc-200 resize-none h-32 focus:outline-none" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {rewrittenData && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-surface p-4 rounded-xl border border-zinc-800">
-                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-2">Original (Amazon)</span>
-                  <input type="text" readOnly value={fetchedData.title} className="w-full bg-transparent border-b border-zinc-800 pb-2 mb-3 text-sm text-zinc-400 focus:outline-none" />
-                  <textarea readOnly value={fetchedData.description} className="w-full bg-transparent text-sm text-zinc-400 resize-none h-32 focus:outline-none" />
+              <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-xl font-bold text-white mb-6">3. Finalize & Publish</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Category</label>
+                    <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
+                      <option value="jerseys">Jerseys</option>
+                      <option value="balls">Balls</option>
+                      <option value="footwear">Footwear</option>
+                      <option value="accessories">Accessories</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Badge</label>
+                    <select value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
+                      <option value="none">None</option>
+                      <option value="hot">Hot</option>
+                      <option value="new">New</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3 md:col-span-2">
+                    <input type="checkbox" id="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-5 h-5 accent-brand" />
+                    <label htmlFor="featured" className="text-sm font-bold text-white">Featured Product (Shows on homepage)</label>
+                  </div>
                 </div>
-                <div className="bg-brand/5 p-4 rounded-xl border border-brand/20">
-                  <span className="text-xs font-bold text-brand uppercase tracking-wider block mb-2 flex items-center gap-1">
-                    ✨ Optimized by Groq AI
-                  </span>
-                  <input
-                    type="text"
-                    value={rewrittenData.title}
-                    onChange={(e) => setRewrittenData({ ...rewrittenData, title: e.target.value })}
-                    className="w-full bg-transparent border-b border-brand/30 pb-2 mb-3 text-sm text-white font-semibold focus:outline-none focus:border-brand"
-                  />
-                  <textarea
-                    value={rewrittenData.description}
-                    onChange={(e) => setRewrittenData({ ...rewrittenData, description: e.target.value })}
-                    className="w-full bg-transparent text-sm text-zinc-200 resize-none h-32 focus:outline-none"
-                  />
-                </div>
+                <button onClick={handleSaveProduct} disabled={isSaving} className="w-full bg-brand text-black font-bold text-lg py-4 rounded-xl hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/20 disabled:opacity-50">
+                  {isSaving ? "Saving..." : "Save Product + Post to Pinterest"}
+                </button>
+                {saveStatus && (
+                  <div className={`mt-4 p-4 rounded-lg font-bold text-sm ${saveStatus.error ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>{saveStatus.message}</div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* Step 3: Product Details */}
-        {rewrittenData && (
-          <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h2 className="text-xl font-bold text-white mb-6">3. Finalize & Publish</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-2">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
-                  <option value="jerseys">Jerseys</option>
-                  <option value="balls">Balls</option>
-                  <option value="footwear">Footwear</option>
-                  <option value="accessories">Accessories</option>
-                  <option value="gaming">Gaming</option>
-                  <option value="collectibles">Collectibles</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-2">Badge</label>
-                <select value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand">
-                  <option value="none">None</option>
-                  <option value="hot">Hot</option>
-                  <option value="new">New</option>
-                  <option value="limited">Limited</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 mb-2">Original Price (Optional)</label>
-                <input type="text" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} placeholder="e.g. 129.99" className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
-              </div>
-              <div className="flex gap-4">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-zinc-400 mb-2">Rating (1-5)</label>
-                  <input type="number" min="1" max="5" step="0.1" value={rating} onChange={(e) => setRating(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+        {/* TAB 2: MANAGE PRODUCTS */}
+        {activeTab === "products" && (
+          <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+            <h2 className="text-xl font-bold text-white mb-6">Manage Products</h2>
+            <div className="space-y-4">
+              {products.map(p => (
+                <div key={p.id} className="flex items-center justify-between bg-surface p-4 rounded-xl border border-zinc-800">
+                  <div className="flex items-center gap-4">
+                    {p.image && <div className="w-12 h-12 relative rounded overflow-hidden"><Image src={p.image} alt="" fill className="object-cover" /></div>}
+                    <div>
+                      <p className="font-bold text-white">{p.title}</p>
+                      <p className="text-sm text-zinc-400">${p.price} • {p.category}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete("products", p.id)} className="text-red-400 hover:text-red-300 font-bold text-sm px-4 py-2 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">
+                    Delete
+                  </button>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-zinc-400 mb-2">Reviews</label>
-                  <input type="number" value={reviewCount} onChange={(e) => setReviewCount(Number(e.target.value))} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-brand" />
+              ))}
+              {products.length === 0 && !isLoadingList && <p className="text-zinc-500">No products found.</p>}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: MANAGE BLOGS */}
+        {activeTab === "blogs" && (
+          <div className="space-y-6">
+            <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+              <h2 className="text-xl font-bold text-white mb-6">Create New Blog</h2>
+              <form onSubmit={handleSaveBlog} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">Title</label>
+                    <input type="text" value={blogForm.title} onChange={e => setBlogForm({...blogForm, title: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 mb-2">URL Slug</label>
+                    <input type="text" value={blogForm.slug} onChange={e => setBlogForm({...blogForm, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')})} placeholder="e.g. top-5-jerseys" className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none" required />
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="featured" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="w-5 h-5 accent-brand" />
-                <label htmlFor="featured" className="text-sm font-bold text-white">Featured Product (Shows on homepage)</label>
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-2">Excerpt</label>
+                  <textarea value={blogForm.excerpt} onChange={e => setBlogForm({...blogForm, excerpt: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none h-20 resize-none" required />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 mb-2">Content (Markdown)</label>
+                  <textarea value={blogForm.body} onChange={e => setBlogForm({...blogForm, body: e.target.value})} className="w-full bg-surface border border-zinc-700 rounded-lg px-4 py-3 text-white focus:border-brand outline-none h-64 font-mono text-sm" required />
+                </div>
+                <button type="submit" className="bg-brand text-black font-bold px-6 py-3 rounded-lg hover:bg-brand-light transition-colors">
+                  Publish Blog
+                </button>
+              </form>
             </div>
 
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="w-full bg-brand text-black font-bold text-lg py-4 rounded-xl hover:bg-brand-light transition-all duration-300 shadow-lg shadow-brand/20 disabled:opacity-50"
-            >
-              {isSaving ? "Saving & Pinning..." : "Save Product + Post to Pinterest"}
-            </button>
-
-            {saveStatus && (
-              <div className={`mt-4 p-4 rounded-lg font-bold text-sm ${saveStatus.error ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-green-500/10 text-green-400 border border-green-500/20'}`}>
-                {saveStatus.message}
+            <div className="bg-surface-2 p-6 rounded-2xl border border-zinc-800">
+              <h2 className="text-xl font-bold text-white mb-6">Manage Blogs</h2>
+              <div className="space-y-4">
+                {blogs.map(b => (
+                  <div key={b.id} className="flex items-center justify-between bg-surface p-4 rounded-xl border border-zinc-800">
+                    <div>
+                      <p className="font-bold text-white">{b.title}</p>
+                      <p className="text-sm text-zinc-400">{b.id}</p>
+                    </div>
+                    <button onClick={() => handleDelete("blogs", b.id)} className="text-red-400 hover:text-red-300 font-bold text-sm px-4 py-2 border border-red-500/30 rounded-lg hover:bg-red-500/10 transition-colors">
+                      Delete
+                    </button>
+                  </div>
+                ))}
+                {blogs.length === 0 && !isLoadingList && <p className="text-zinc-500">No blogs found.</p>}
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>
